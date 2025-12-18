@@ -14,6 +14,7 @@ import {
   CheckSquare,
   Square,
   ArrowLeft,
+  Check,
 } from 'lucide-react';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
@@ -145,9 +146,7 @@ function App() {
       }
 
       setStatus('success');
-      setMessage(
-        `Successfully backed up ${cookiesToBackup.length} cookies from ${selectedCount} domains!`
-      );
+      setMessage(`Successfully backed up ${cookiesToBackup.length} cookies from ${selectedCount} domains!`);
       setPassword('');
       setConfirmPassword('');
       setBackupStep('password');
@@ -245,27 +244,40 @@ function App() {
 
   const warningCount = restoreDetails.filter((d) => d.status !== 'success').length;
 
+  // Custom checkbox component for better visibility
+  const Checkbox = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
+    <button
+      type="button"
+      onClick={onChange}
+      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 ${checked
+          ? 'bg-primary border-primary text-primary-foreground'
+          : 'bg-transparent border-muted-foreground/40 hover:border-primary/60'
+        }`}
+    >
+      {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
+      {/* Header */}
       <header className="mb-6 text-center space-y-2">
-        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-          <Shield className="w-6 h-6 text-primary" />
+        <div className="mx-auto w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10">
+          <Shield className="w-7 h-7 text-primary" />
         </div>
         <h1 className="text-xl font-bold tracking-tight">Cookie Vault</h1>
         <p className="text-sm text-muted-foreground">Secure your session data</p>
       </header>
 
-      <div className="flex p-1 mb-6 bg-secondary/50 rounded-lg">
+      {/* Tab Navigation - HIGH CONTRAST */}
+      <div className="flex p-1.5 mb-6 bg-secondary rounded-xl">
         <button
           onClick={() => {
             setActiveTab('backup');
             resetState();
           }}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
-            activeTab === 'backup'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
+          className={`tab-button ${activeTab === 'backup' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
         >
           <Download className="w-4 h-4" />
           Backup
@@ -275,11 +287,8 @@ function App() {
             setActiveTab('restore');
             resetState();
           }}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
-            activeTab === 'restore'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
+          className={`tab-button ${activeTab === 'restore' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
         >
           <Upload className="w-4 h-4" />
           Restore
@@ -333,13 +342,13 @@ function App() {
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setBackupStep('password')}
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Back
                 </button>
-                <span className="text-xs text-muted-foreground">
-                  {selectedCount} of {domainGroups.length} domains ({totalCookiesSelected} cookies)
+                <span className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-full">
+                  {selectedCount}/{domainGroups.length} domains · {totalCookiesSelected} cookies
                 </span>
               </div>
 
@@ -357,45 +366,35 @@ function App() {
 
               {/* Select All / Deselect All */}
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1 text-xs"
-                  onClick={selectAll}
-                >
-                  <CheckSquare className="w-3 h-3 mr-1" />
+                <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={selectAll}>
+                  <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
                   Select All
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1 text-xs"
-                  onClick={deselectAll}
-                >
-                  <Square className="w-3 h-3 mr-1" />
+                <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={deselectAll}>
+                  <Square className="w-3.5 h-3.5 mr-1.5" />
                   Deselect All
                 </Button>
               </div>
 
               {/* Domain List */}
-              <div className="max-h-48 overflow-y-auto border border-border rounded-md divide-y divide-border">
+              <div className="max-h-52 overflow-y-auto border border-border rounded-xl divide-y divide-border bg-card">
                 {filteredDomains.map((group) => (
                   <label
                     key={group.domain}
-                    className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer"
+                    className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                      }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={group.selected}
-                      onChange={() => toggleDomain(group.domain)}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <span className="flex-1 text-sm truncate">{group.domain}</span>
-                    <span className="text-xs text-muted-foreground">{group.cookies.length}</span>
+                    <Checkbox checked={group.selected} onChange={() => toggleDomain(group.domain)} />
+                    <span className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {group.domain}
+                    </span>
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                      {group.cookies.length}
+                    </span>
                   </label>
                 ))}
                 {filteredDomains.length === 0 && (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
+                  <div className="p-6 text-center text-sm text-muted-foreground">
                     No domains match your search
                   </div>
                 )}
@@ -415,8 +414,10 @@ function App() {
           <form onSubmit={handleRestorePreview} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="restore-file">Backup File</Label>
-              <div className="border border-input border-dashed rounded-md p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-muted/50 transition-colors cursor-pointer relative">
-                <FileKey className="w-8 h-8 text-muted-foreground" />
+              <div className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-muted/30 hover:border-primary/40 transition-all cursor-pointer relative">
+                <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center">
+                  <FileKey className="w-6 h-6 text-muted-foreground" />
+                </div>
                 <span className="text-sm text-muted-foreground">
                   {file ? file.name : 'Click to select .cv or .ckz file'}
                 </span>
@@ -455,13 +456,13 @@ function App() {
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setRestoreStep('file')}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </button>
-              <span className="text-xs text-muted-foreground">
-                {selectedCount} of {domainGroups.length} domains ({totalCookiesSelected} cookies)
+              <span className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-full">
+                {selectedCount}/{domainGroups.length} domains · {totalCookiesSelected} cookies
               </span>
             </div>
 
@@ -479,45 +480,35 @@ function App() {
 
             {/* Select All / Deselect All */}
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1 text-xs"
-                onClick={selectAll}
-              >
-                <CheckSquare className="w-3 h-3 mr-1" />
+              <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={selectAll}>
+                <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
                 Select All
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1 text-xs"
-                onClick={deselectAll}
-              >
-                <Square className="w-3 h-3 mr-1" />
+              <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={deselectAll}>
+                <Square className="w-3.5 h-3.5 mr-1.5" />
                 Deselect All
               </Button>
             </div>
 
             {/* Domain List */}
-            <div className="max-h-48 overflow-y-auto border border-border rounded-md divide-y divide-border">
+            <div className="max-h-52 overflow-y-auto border border-border rounded-xl divide-y divide-border bg-card">
               {filteredDomains.map((group) => (
                 <label
                   key={group.domain}
-                  className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer"
+                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                    }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={group.selected}
-                    onChange={() => toggleDomain(group.domain)}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <span className="flex-1 text-sm truncate">{group.domain}</span>
-                  <span className="text-xs text-muted-foreground">{group.cookies.length}</span>
+                  <Checkbox checked={group.selected} onChange={() => toggleDomain(group.domain)} />
+                  <span className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    {group.domain}
+                  </span>
+                  <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                    {group.cookies.length}
+                  </span>
                 </label>
               ))}
               {filteredDomains.length === 0 && (
-                <div className="p-4 text-center text-sm text-muted-foreground">
+                <div className="p-6 text-center text-sm text-muted-foreground">
                   No domains match your search
                 </div>
               )}
@@ -543,15 +534,15 @@ function App() {
           </div>
         )}
 
+        {/* Status Message */}
         {message && (
           <div
-            className={`p-4 rounded-md text-sm ${
-              status === 'error'
-                ? 'bg-destructive/15 text-destructive'
+            className={`p-4 rounded-xl text-sm font-medium ${status === 'error'
+                ? 'bg-destructive/10 text-destructive border border-destructive/20'
                 : status === 'success'
-                  ? 'bg-green-500/15 text-green-500'
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
                   : 'bg-secondary text-secondary-foreground'
-            }`}
+              }`}
           >
             {message}
           </div>
@@ -559,20 +550,16 @@ function App() {
 
         {/* Collapsible Warnings Panel */}
         {restoreDetails.length > 0 && warningCount > 0 && (
-          <div className="border border-border rounded-md overflow-hidden">
+          <div className="border border-border rounded-xl overflow-hidden bg-card">
             <button
               onClick={() => setShowWarnings(!showWarnings)}
-              className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/50 transition-colors text-sm font-medium"
+              className="w-full flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
             >
               <span className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-yellow-500" />
                 {warningCount} cookie{warningCount > 1 ? 's' : ''} need attention
               </span>
-              {showWarnings ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
+              {showWarnings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
 
             {showWarnings && (
@@ -580,10 +567,7 @@ function App() {
                 {restoreDetails
                   .filter((d) => d.status !== 'success')
                   .map((detail, idx) => (
-                    <div
-                      key={`${detail.domain}-${detail.name}-${idx}`}
-                      className="p-3 flex items-start gap-3 text-xs"
-                    >
+                    <div key={`${detail.domain}-${detail.name}-${idx}`} className="p-3 flex items-start gap-3 text-xs">
                       {detail.status === 'skipped' ? (
                         <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
                       ) : (
@@ -592,9 +576,7 @@ function App() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">{detail.name}</p>
                         <p className="text-muted-foreground truncate">{detail.domain}</p>
-                        {detail.reason && (
-                          <p className="text-muted-foreground mt-1">{detail.reason}</p>
-                        )}
+                        {detail.reason && <p className="text-muted-foreground mt-1">{detail.reason}</p>}
                       </div>
                     </div>
                   ))}
@@ -604,7 +586,7 @@ function App() {
         )}
 
         {restoreDetails.length > 0 && status === 'success' && warningCount === 0 && (
-          <div className="flex items-center gap-2 text-sm text-green-500">
+          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
             <CheckCircle className="w-4 h-4" />
             All {restoreDetails.length} cookies restored successfully!
           </div>
