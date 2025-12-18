@@ -186,6 +186,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 **Made with ❤️ for seamless browser migrations**
 
-_Last updated: December 2024_
+_Last updated: December 2025_
 
 </div>
