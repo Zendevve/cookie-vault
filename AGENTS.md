@@ -157,4 +157,4 @@ If no new rule is detected → do not update the file.
 
 ### Dislikes
 
-<!-- CUSTOMIZE (remove after) -->
+- NOT FOLLOWING MCAF (user emphatic: "DUMBFUCK MAKE SURE THIS IS FOLLOWING MCAF") - ALWAYS follow the full MCAF workflow: read docs → plan → implement WITH tests → run tests → format → build → commit. Never skip steps.

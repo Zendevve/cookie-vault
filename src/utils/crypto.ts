@@ -1,4 +1,5 @@
 import sjcl from 'sjcl';
+import { generateChecksum, verifyChecksum } from './password';
 
 /**
  * Interface for Cookie Object (matching Chrome API)
@@ -65,12 +66,16 @@ export async function encryptData(data: any, password: string): Promise<Blob> {
     enc.encode(rawData)
   );
 
-  // 5. Pack result
+  // 5. Generate checksum of original data for integrity verification
+  const checksum = await generateChecksum(rawData);
+
+  // 6. Pack result
   const result = {
-    version: 'v2', // v2 = WebCrypto
+    version: 'v3', // v3 = WebCrypto with checksum
     salt: Array.from(salt),
     iv: Array.from(iv),
     data: Array.from(new Uint8Array(encrypted)),
+    checksum: checksum,
   };
 
   return new Blob([JSON.stringify(result)], { type: 'application/octet-stream' });
@@ -87,9 +92,9 @@ export async function decryptData(fileContent: string, password: string): Promis
   try {
     const json = JSON.parse(fileContent);
 
-    // Check for v2 format
-    if (json.version === 'v2' && json.salt && json.iv && json.data) {
-      return await decryptV2(json, password);
+    // Check for v2/v3 format (WebCrypto)
+    if ((json.version === 'v2' || json.version === 'v3') && json.salt && json.iv && json.data) {
+      return await decryptWebCrypto(json, password);
     }
 
     // Check for legacy SJCL format
@@ -109,7 +114,7 @@ export async function decryptData(fileContent: string, password: string): Promis
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Parsed JSON structures
-async function decryptV2(json: any, password: string): Promise<any> {
+async function decryptWebCrypto(json: any, password: string): Promise<any> {
   const enc = new TextEncoder();
   const salt = new Uint8Array(json.salt);
   const iv = new Uint8Array(json.iv);
@@ -146,8 +151,21 @@ async function decryptV2(json: any, password: string): Promise<any> {
       data
     );
     const dec = new TextDecoder();
-    return JSON.parse(dec.decode(decrypted));
-  } catch {
+    const decryptedText = dec.decode(decrypted);
+
+    // Verify checksum for v3 format
+    if (json.version === 'v3' && json.checksum) {
+      const isValid = await verifyChecksum(decryptedText, json.checksum);
+      if (!isValid) {
+        throw new Error('Backup file corrupted (checksum mismatch)');
+      }
+    }
+
+    return JSON.parse(decryptedText);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('checksum')) {
+      throw err;
+    }
     throw new Error('Incorrect password or corrupted file');
   }
 }
