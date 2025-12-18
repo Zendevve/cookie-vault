@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Mock types require any assertions */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import browser from 'webextension-polyfill';
-import { restoreCookies } from './cookies';
+import { restoreCookies, groupCookiesByDomain, filterCookiesByDomains } from './cookies';
 import type { Cookie } from './crypto';
 
 // Mock webextension-polyfill
@@ -155,6 +155,116 @@ describe('Cookie Utils', () => {
       expect(result.skipped).toBe(1);
       expect(result.failed).toBe(1);
       expect(result.details).toHaveLength(3);
+    });
+  });
+
+  describe('groupCookiesByDomain', () => {
+    const baseCookie: Cookie = {
+      name: 'test',
+      value: 'value',
+      domain: 'example.com',
+      path: '/',
+      secure: true,
+      httpOnly: false,
+      storeId: '0',
+    };
+
+    it('should group cookies by domain', () => {
+      const cookies: Cookie[] = [
+        { ...baseCookie, name: 'a', domain: 'example.com' },
+        { ...baseCookie, name: 'b', domain: 'example.com' },
+        { ...baseCookie, name: 'c', domain: 'other.com' },
+      ];
+
+      const groups = groupCookiesByDomain(cookies);
+
+      expect(groups).toHaveLength(2);
+      expect(groups[0].domain).toBe('example.com');
+      expect(groups[0].cookies).toHaveLength(2);
+      expect(groups[1].domain).toBe('other.com');
+      expect(groups[1].cookies).toHaveLength(1);
+    });
+
+    it('should normalize domains with leading dots', () => {
+      const cookies: Cookie[] = [
+        { ...baseCookie, name: 'a', domain: '.example.com' },
+        { ...baseCookie, name: 'b', domain: 'example.com' },
+      ];
+
+      const groups = groupCookiesByDomain(cookies);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].domain).toBe('example.com');
+      expect(groups[0].cookies).toHaveLength(2);
+    });
+
+    it('should sort by cookie count descending', () => {
+      const cookies: Cookie[] = [
+        { ...baseCookie, name: 'a', domain: 'small.com' },
+        { ...baseCookie, name: 'b', domain: 'big.com' },
+        { ...baseCookie, name: 'c', domain: 'big.com' },
+        { ...baseCookie, name: 'd', domain: 'big.com' },
+      ];
+
+      const groups = groupCookiesByDomain(cookies);
+
+      expect(groups[0].domain).toBe('big.com');
+      expect(groups[0].cookies).toHaveLength(3);
+    });
+
+    it('should default selected to true', () => {
+      const cookies: Cookie[] = [{ ...baseCookie }];
+
+      const groups = groupCookiesByDomain(cookies);
+
+      expect(groups[0].selected).toBe(true);
+    });
+  });
+
+  describe('filterCookiesByDomains', () => {
+    const baseCookie: Cookie = {
+      name: 'test',
+      value: 'value',
+      domain: 'example.com',
+      path: '/',
+      secure: true,
+      httpOnly: false,
+      storeId: '0',
+    };
+
+    it('should filter cookies by selected domains', () => {
+      const cookies: Cookie[] = [
+        { ...baseCookie, name: 'a', domain: 'keep.com' },
+        { ...baseCookie, name: 'b', domain: 'remove.com' },
+        { ...baseCookie, name: 'c', domain: 'keep.com' },
+      ];
+
+      const selected = new Set(['keep.com']);
+      const filtered = filterCookiesByDomains(cookies, selected);
+
+      expect(filtered).toHaveLength(2);
+      expect(filtered.every((c: Cookie) => c.domain === 'keep.com')).toBe(true);
+    });
+
+    it('should handle domains with leading dots', () => {
+      const cookies: Cookie[] = [
+        { ...baseCookie, name: 'a', domain: '.keep.com' },
+        { ...baseCookie, name: 'b', domain: 'keep.com' },
+      ];
+
+      const selected = new Set(['keep.com']);
+      const filtered = filterCookiesByDomains(cookies, selected);
+
+      expect(filtered).toHaveLength(2);
+    });
+
+    it('should return empty array when no domains selected', () => {
+      const cookies: Cookie[] = [{ ...baseCookie }];
+
+      const selected = new Set<string>();
+      const filtered = filterCookiesByDomains(cookies, selected);
+
+      expect(filtered).toHaveLength(0);
     });
   });
 });
