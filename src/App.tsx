@@ -1,26 +1,51 @@
 import { useState } from 'react';
-import { Shield, Download, Upload, Lock, FileKey } from 'lucide-react';
+import {
+  Shield,
+  Download,
+  Upload,
+  Lock,
+  FileKey,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
 import { Label } from './components/ui/Label';
 import { encryptData, decryptData, type Cookie } from './utils/crypto';
-import { getAllCookies, restoreCookies } from './utils/cookies';
+import {
+  getAllCookies,
+  restoreCookies,
+  type RestoreResult,
+  type CookieRestoreDetail,
+} from './utils/cookies';
 
 type Tab = 'backup' | 'restore';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('backup');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [file, setFile] = useState<File | null>(null);
+  const [restoreDetails, setRestoreDetails] = useState<CookieRestoreDetail[]>([]);
+  const [showWarnings, setShowWarnings] = useState(false);
 
   const handleBackup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password) {
       setStatus('error');
       setMessage('Password is required');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setStatus('error');
+      setMessage('Passwords do not match');
       return;
     }
 
@@ -56,6 +81,8 @@ function App() {
 
       setStatus('success');
       setMessage(`Successfully backed up ${cookies.length} cookies!`);
+      setPassword('');
+      setConfirmPassword('');
     } catch (err: unknown) {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'Backup failed');
@@ -73,24 +100,44 @@ function App() {
     try {
       setStatus('loading');
       setMessage('Reading file...');
+      setRestoreDetails([]);
+      setShowWarnings(false);
       const text = await file.text();
 
       setMessage('Decrypting...');
       const cookies: Cookie[] = await decryptData(text, password);
 
       setMessage(`Restoring ${cookies.length} cookies...`);
-      const result = await restoreCookies(cookies, (current, total) => {
+      const result: RestoreResult = await restoreCookies(cookies, (current, total) => {
         setProgress({ current, total });
       });
 
+      setRestoreDetails(result.details);
       setStatus('success');
-      setMessage(`Restored: ${result.success}, Failed: ${result.failed}`);
+
+      // Build summary message
+      const parts: string[] = [];
+      if (result.success > 0) parts.push(`✓ ${result.success} restored`);
+      if (result.skipped > 0) parts.push(`⚠ ${result.skipped} skipped`);
+      if (result.failed > 0) parts.push(`✗ ${result.failed} failed`);
+      setMessage(parts.join(' · '));
+
+      // Auto-expand warnings if there are any issues
+      if (result.skipped > 0 || result.failed > 0) {
+        setShowWarnings(true);
+      }
+
+      setPassword('');
     } catch (err: unknown) {
       console.error(err);
       setStatus('error');
-      setMessage(err instanceof Error ? err.message : 'Restore failed. Check password or file format.');
+      setMessage(
+        err instanceof Error ? err.message : 'Restore failed. Check password or file format.'
+      );
     }
   };
+
+  const warningCount = restoreDetails.filter((d) => d.status !== 'success').length;
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
@@ -108,11 +155,13 @@ function App() {
             setActiveTab('backup');
             setStatus('idle');
             setMessage('');
+            setRestoreDetails([]);
           }}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'backup'
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
+            activeTab === 'backup'
               ? 'bg-background text-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
-            }`}
+          }`}
         >
           <Download className="w-4 h-4" />
           Backup
@@ -122,11 +171,13 @@ function App() {
             setActiveTab('restore');
             setStatus('idle');
             setMessage('');
+            setRestoreDetails([]);
           }}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'restore'
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
+            activeTab === 'restore'
               ? 'bg-background text-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
-            }`}
+          }`}
         >
           <Upload className="w-4 h-4" />
           Restore
@@ -147,6 +198,21 @@ function App() {
                   className="pl-9"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Confirm your password"
+                  className="pl-9"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -209,14 +275,69 @@ function App() {
 
         {message && (
           <div
-            className={`p-4 rounded-md text-sm ${status === 'error'
+            className={`p-4 rounded-md text-sm ${
+              status === 'error'
                 ? 'bg-destructive/15 text-destructive'
                 : status === 'success'
                   ? 'bg-green-500/15 text-green-500'
                   : 'bg-secondary text-secondary-foreground'
-              }`}
+            }`}
           >
             {message}
+          </div>
+        )}
+
+        {/* Collapsible Warnings Panel */}
+        {restoreDetails.length > 0 && warningCount > 0 && (
+          <div className="border border-border rounded-md overflow-hidden">
+            <button
+              onClick={() => setShowWarnings(!showWarnings)}
+              className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/50 transition-colors text-sm font-medium"
+            >
+              <span className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                {warningCount} cookie{warningCount > 1 ? 's' : ''} need attention
+              </span>
+              {showWarnings ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+
+            {showWarnings && (
+              <div className="max-h-48 overflow-y-auto divide-y divide-border">
+                {restoreDetails
+                  .filter((d) => d.status !== 'success')
+                  .map((detail, idx) => (
+                    <div
+                      key={`${detail.domain}-${detail.name}-${idx}`}
+                      className="p-3 flex items-start gap-3 text-xs"
+                    >
+                      {detail.status === 'skipped' ? (
+                        <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{detail.name}</p>
+                        <p className="text-muted-foreground truncate">{detail.domain}</p>
+                        {detail.reason && (
+                          <p className="text-muted-foreground mt-1">{detail.reason}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Success Details (optional - show count of successful) */}
+        {restoreDetails.length > 0 && status === 'success' && warningCount === 0 && (
+          <div className="flex items-center gap-2 text-sm text-green-500">
+            <CheckCircle className="w-4 h-4" />
+            All {restoreDetails.length} cookies restored successfully!
           </div>
         )}
       </div>

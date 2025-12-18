@@ -160,7 +160,10 @@ function decryptLegacy(fileContent: string, password: string): any {
   } catch (e: unknown) {
     // SJCL throws specific exceptions, but we just want to bubble "Incorrect password"
     const error = e as Error;
-    if (error.message && (error.message.indexOf('corrupt') !== -1 || error.message.indexOf('invalid') !== -1)) {
+    if (
+      error.message &&
+      (error.message.indexOf('corrupt') !== -1 || error.message.indexOf('invalid') !== -1)
+    ) {
       throw new Error('Incorrect password or corrupted file');
     }
     throw e;

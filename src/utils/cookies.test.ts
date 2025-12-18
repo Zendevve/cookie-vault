@@ -38,10 +38,13 @@ describe('Cookie Utils', () => {
 
       expect(result.success).toBe(1);
       expect(result.failed).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(result.details).toHaveLength(1);
+      expect(result.details[0].status).toBe('success');
       expect(browser.cookies.set).toHaveBeenCalledTimes(1);
     });
 
-    it('should skip expired cookies', async () => {
+    it('should skip expired cookies and include reason in details', async () => {
       const expiredCookie: Cookie = {
         ...baseCookie,
         expirationDate: Date.now() / 1000 - 3600, // 1 hour ago
@@ -51,6 +54,10 @@ describe('Cookie Utils', () => {
 
       expect(result.success).toBe(0);
       expect(result.failed).toBe(0);
+      expect(result.skipped).toBe(1);
+      expect(result.details).toHaveLength(1);
+      expect(result.details[0].status).toBe('skipped');
+      expect(result.details[0].reason).toBe('Cookie has expired');
       expect(browser.cookies.set).not.toHaveBeenCalled();
     });
 
@@ -69,21 +76,25 @@ describe('Cookie Utils', () => {
 
       expect(result.success).toBe(1);
       expect(result.failed).toBe(0);
+      expect(result.details[0].status).toBe('success');
+      expect(result.details[0].reason).toBe('Upgraded to HTTPS');
       expect(browser.cookies.set).toHaveBeenCalledTimes(2);
     });
 
-    it('should count as failed when retry also fails', async () => {
+    it('should count as failed when retry also fails and include error in details', async () => {
       const insecureCookie: Cookie = {
         ...baseCookie,
         secure: false,
       };
 
-      vi.mocked(browser.cookies.set).mockRejectedValue(new Error('Failed'));
+      vi.mocked(browser.cookies.set).mockRejectedValue(new Error('Permission denied'));
 
       const result = await restoreCookies([insecureCookie]);
 
       expect(result.success).toBe(0);
       expect(result.failed).toBe(1);
+      expect(result.details[0].status).toBe('failed');
+      expect(result.details[0].reason).toBe('Permission denied');
     });
 
     it('should call progress callback', async () => {
@@ -125,6 +136,25 @@ describe('Cookie Utils', () => {
       expect(calls.length).toBeGreaterThan(0);
       const callArg = calls[0][0] as any;
       expect(callArg.expirationDate).toBeUndefined();
+    });
+
+    it('should return correct counts for mixed results', async () => {
+      const cookies: Cookie[] = [
+        baseCookie, // will succeed
+        { ...baseCookie, name: 'expired', expirationDate: Date.now() / 1000 - 100 }, // will skip
+        { ...baseCookie, name: 'fail', secure: false }, // will fail
+      ];
+
+      vi.mocked(browser.cookies.set)
+        .mockResolvedValueOnce({} as any) // first succeeds
+        .mockRejectedValue(new Error('Failed')); // third fails (both attempts)
+
+      const result = await restoreCookies(cookies);
+
+      expect(result.success).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(result.failed).toBe(1);
+      expect(result.details).toHaveLength(3);
     });
   });
 });

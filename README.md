@@ -10,7 +10,7 @@
 [![Chrome Extension](https://img.shields.io/badge/Manifest-V3-4285F4?logo=googlechrome)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)](https://vite.dev/)
 
-*Never lose your login sessions again.*
+_Never lose your login sessions again._
 
 </div>
 
@@ -81,12 +81,12 @@ npm run build
 
 Cookie Vault takes your security seriously:
 
-| Feature | Implementation |
-|---------|---------------|
-| **Encryption** | AES-256-GCM via Web Crypto API |
-| **Key Derivation** | PBKDF2 with 100,000 iterations |
+| Feature            | Implementation                   |
+| ------------------ | -------------------------------- |
+| **Encryption**     | AES-256-GCM via Web Crypto API   |
+| **Key Derivation** | PBKDF2 with 100,000 iterations   |
 | **Legacy Support** | SJCL decryption for `.ckz` files |
-| **No Cloud** | All data stays on your device |
+| **No Cloud**       | All data stays on your device    |
 
 Your password **never leaves your browser**. Backups are encrypted locally before download.
 
@@ -101,13 +101,13 @@ Your password **never leaves your browser**. Backups are encrypted locally befor
 
 ### Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server with HMR |
-| `npm run build` | Build for production |
-| `npm run test` | Run tests (Vitest) |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format with Prettier |
+| Command          | Description               |
+| ---------------- | ------------------------- |
+| `npm run dev`    | Start dev server with HMR |
+| `npm run build`  | Build for production      |
+| `npm run test`   | Run tests (Vitest)        |
+| `npm run lint`   | Run ESLint                |
+| `npm run format` | Format with Prettier      |
 
 ### Project Structure
 
@@ -136,6 +136,7 @@ npm run test -- --coverage
 ```
 
 **Current test coverage:**
+
 - ✅ Encryption/decryption (round-trip)
 - ✅ Legacy SJCL format support
 - ✅ Cookie restoration logic
@@ -185,6 +186,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 **Made with ❤️ for seamless browser migrations**
 
-*Last updated: December 2024*
+_Last updated: December 2024_
 
 </div>
