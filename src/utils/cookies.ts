@@ -24,6 +24,57 @@ export interface RestoreResult {
   details: CookieRestoreDetail[];
 }
 
+/**
+ * Domain group for selective backup/restore preview
+ */
+export interface DomainGroup {
+  domain: string;
+  cookies: Cookie[];
+  selected: boolean;
+}
+
+/**
+ * Groups cookies by their base domain for preview UI
+ * @param cookies Array of cookies to group
+ * @returns Array of DomainGroup objects sorted by cookie count (descending)
+ */
+export function groupCookiesByDomain(cookies: Cookie[]): DomainGroup[] {
+  const domainMap = new Map<string, Cookie[]>();
+
+  for (const cookie of cookies) {
+    // Normalize domain (remove leading dot)
+    const domain = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
+
+    const existing = domainMap.get(domain) || [];
+    existing.push(cookie);
+    domainMap.set(domain, existing);
+  }
+
+  // Convert to array and sort by cookie count (most cookies first)
+  const groups: DomainGroup[] = Array.from(domainMap.entries())
+    .map(([domain, cookies]) => ({
+      domain,
+      cookies,
+      selected: true, // Default to selected
+    }))
+    .sort((a, b) => b.cookies.length - a.cookies.length);
+
+  return groups;
+}
+
+/**
+ * Filters cookies to only include those from selected domains
+ * @param cookies All cookies
+ * @param selectedDomains Set of domain names to include
+ * @returns Filtered cookie array
+ */
+export function filterCookiesByDomains(cookies: Cookie[], selectedDomains: Set<string>): Cookie[] {
+  return cookies.filter((cookie) => {
+    const domain = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
+    return selectedDomains.has(domain);
+  });
+}
+
 export async function getAllCookies(): Promise<Cookie[]> {
   if (!isExtension) {
     console.warn('Not extensions environment, returning mock cookies');
