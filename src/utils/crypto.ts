@@ -72,7 +72,7 @@ export async function encryptData(data: any, password: string): Promise<Blob> {
     data: Array.from(new Uint8Array(encrypted)),
   };
 
-  return new Blob([JSON.stringify(result)], { type: "application/json" });
+  return new Blob([JSON.stringify(result)], { type: "application/octet-stream" });
 }
 
 /**
