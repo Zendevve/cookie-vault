@@ -100,9 +100,9 @@ Key points:
 
 ### New or changed tests
 
-| ID | Scenario | Level (Unit / Int / API / UI) | Expected result | Notes / Data |
-| --- | --- | --- | --- | --- |
-| {{TST-001}} | {{Happy path / negative / edge}} | {{Integration}} | {{Observable outcome}} | {{Fixtures / seed data}} |
+| ID          | Scenario                         | Level (Unit / Int / API / UI) | Expected result        | Notes / Data             |
+| ----------- | -------------------------------- | ----------------------------- | ---------------------- | ------------------------ |
+| {{TST-001}} | {{Happy path / negative / edge}} | {{Integration}}               | {{Observable outcome}} | {{Fixtures / seed data}} |
 
 ### Regression and analysis
 

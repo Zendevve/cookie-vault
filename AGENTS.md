@@ -1,6 +1,7 @@
 # AGENTS.md
 
 <!-- CUSTOMIZE (remove after): project name and stack -->
+
 Cookie Vault — React, Vite, TypeScript, Chrome Extension
 
 Follows [MCAF](https://mcaf.managed-code.com/)
@@ -116,7 +117,7 @@ If no new rule is detected → do not update the file.
 
 <!-- CUSTOMIZE (remove after): your language/framework -->
 
-- Style rules: `.eslintrc`, `prettierrc`
+- Style rules: `eslint.config.js`, `.prettierrc`
 - No magic literals — extract to constants, enums, config
 - Use TypeScript for all new code. Use strict mode.
 - Use React functional components with hooks.
@@ -145,3 +146,15 @@ If no new rule is detected → do not update the file.
 - Adding new dependencies
 - Modifying database schema
 - Deleting code files
+
+---
+
+## Preferences
+
+### Likes
+
+- MCAF adherence (ALWAYS follow MCAF, it's the guiding principle - user explicit directive)
+
+### Dislikes
+
+<!-- CUSTOMIZE (remove after) -->

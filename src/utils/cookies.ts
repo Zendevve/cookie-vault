@@ -1,21 +1,21 @@
-import type { Cookie } from "./crypto";
-import browser from "webextension-polyfill";
+import type { Cookie } from './crypto';
+import browser from 'webextension-polyfill';
 
 // Helper to check if we are in a browser extension environment
-const isExtension = typeof chrome !== "undefined" && !!chrome.cookies;
+const isExtension = typeof chrome !== 'undefined' && !!chrome.cookies;
 
 export async function getAllCookies(): Promise<Cookie[]> {
   if (!isExtension) {
-    console.warn("Not extensions environment, returning mock cookies");
+    console.warn('Not extensions environment, returning mock cookies');
     return [
       {
-        name: "test_cookie",
-        value: "test_value",
-        domain: "example.com",
-        path: "/",
+        name: 'test_cookie',
+        value: 'test_value',
+        domain: 'example.com',
+        path: '/',
         secure: true,
         httpOnly: true,
-        storeId: "0",
+        storeId: '0',
       },
     ];
   }
@@ -30,7 +30,7 @@ export async function restoreCookies(
   onProgress?: (current: number, total: number) => void
 ): Promise<{ success: number; failed: number }> {
   if (!isExtension) {
-    console.warn("Not extension environment, skipping restore");
+    console.warn('Not extension environment, skipping restore');
     return { success: cookies.length, failed: 0 };
   }
 
@@ -40,6 +40,7 @@ export async function restoreCookies(
 
   for (let i = 0; i < total; i++) {
     const cookie = cookies[i];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Browser API types are loose
     let setDetails: any = {};
 
     // 1. Skip expired cookies
@@ -48,11 +49,17 @@ export async function restoreCookies(
     }
 
     const buildUrl = (secure: boolean, domain: string, path: string) => {
-      return "http" + (secure ? "s" : "") + "://" + (domain.startsWith(".") ? domain.slice(1) : domain) + path;
-    }
+      return (
+        'http' +
+        (secure ? 's' : '') +
+        '://' +
+        (domain.startsWith('.') ? domain.slice(1) : domain) +
+        path
+      );
+    };
 
     // Attempt 1: As-is (with cleanup)
-    let url = buildUrl(cookie.secure, cookie.domain, cookie.path);
+    const url = buildUrl(cookie.secure, cookie.domain, cookie.path);
 
     setDetails = {
       url: url,
@@ -65,12 +72,20 @@ export async function restoreCookies(
       expirationDate: cookie.expirationDate,
     };
 
-    if (cookie.sameSite === "no_restriction" || cookie.sameSite === "lax" || cookie.sameSite === "strict") {
+    if (
+      cookie.sameSite === 'no_restriction' ||
+      cookie.sameSite === 'lax' ||
+      cookie.sameSite === 'strict'
+    ) {
       setDetails.sameSite = cookie.sameSite;
     }
 
-    if (cookie.hostOnly) { delete setDetails.domain; }
-    if (cookie.session) { delete setDetails.expirationDate; }
+    if (cookie.hostOnly) {
+      delete setDetails.domain;
+    }
+    if (cookie.session) {
+      delete setDetails.expirationDate;
+    }
 
     try {
       await browser.cookies.set(setDetails);
@@ -92,7 +107,7 @@ export async function restoreCookies(
         }
       } catch (retryError) {
         console.error(`Failed to restore cookie ${cookie.name} after retry:`, retryError);
-        console.error("Details:", JSON.stringify(setDetails));
+        console.error('Details:', JSON.stringify(setDetails));
         failed++;
       }
     }

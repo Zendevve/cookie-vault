@@ -12,7 +12,7 @@ export interface Cookie {
   httpOnly: boolean;
   expirationDate?: number;
   storeId: string;
-  sameSite?: "no_restriction" | "lax" | "strict" | "unspecified";
+  sameSite?: 'no_restriction' | 'lax' | 'strict' | 'unspecified';
   session?: boolean;
   hostOnly?: boolean;
 }
@@ -23,6 +23,7 @@ export interface Cookie {
  * @param password The password to derive the key from
  * @returns Blob containing the encrypted data (JSON format with salt, iv, data)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic encryption function accepts any data
 export async function encryptData(data: any, password: string): Promise<Blob> {
   const enc = new TextEncoder();
   const rawData = JSON.stringify(data);
@@ -33,31 +34,31 @@ export async function encryptData(data: any, password: string): Promise<Blob> {
 
   // 2. Import password
   const keyMaterial = await crypto.subtle.importKey(
-    "raw",
+    'raw',
     enc.encode(password),
-    { name: "PBKDF2" },
+    { name: 'PBKDF2' },
     false,
-    ["deriveKey"]
+    ['deriveKey']
   );
 
   // 3. Derive key
   const key = await crypto.subtle.deriveKey(
     {
-      name: "PBKDF2",
+      name: 'PBKDF2',
       salt: salt,
       iterations: 100000,
-      hash: "SHA-256",
+      hash: 'SHA-256',
     },
     keyMaterial,
-    { name: "AES-GCM", length: 256 },
+    { name: 'AES-GCM', length: 256 },
     false,
-    ["encrypt"]
+    ['encrypt']
   );
 
   // 4. Encrypt
   const encrypted = await crypto.subtle.encrypt(
     {
-      name: "AES-GCM",
+      name: 'AES-GCM',
       iv: iv,
     },
     key,
@@ -66,13 +67,13 @@ export async function encryptData(data: any, password: string): Promise<Blob> {
 
   // 5. Pack result
   const result = {
-    version: "v2", // v2 = WebCrypto
+    version: 'v2', // v2 = WebCrypto
     salt: Array.from(salt),
     iv: Array.from(iv),
     data: Array.from(new Uint8Array(encrypted)),
   };
 
-  return new Blob([JSON.stringify(result)], { type: "application/octet-stream" });
+  return new Blob([JSON.stringify(result)], { type: 'application/octet-stream' });
 }
 
 /**
@@ -81,12 +82,13 @@ export async function encryptData(data: any, password: string): Promise<Blob> {
  * @param password The password
  * @returns The decrypted data object (usually Cookie[])
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns parsed JSON of unknown structure
 export async function decryptData(fileContent: string, password: string): Promise<any> {
   try {
     const json = JSON.parse(fileContent);
 
     // Check for v2 format
-    if (json.version === "v2" && json.salt && json.iv && json.data) {
+    if (json.version === 'v2' && json.salt && json.iv && json.data) {
       return await decryptV2(json, password);
     }
 
@@ -96,17 +98,17 @@ export async function decryptData(fileContent: string, password: string): Promis
       return decryptLegacy(fileContent, password);
     }
 
-    throw new Error("Unknown file format");
-
-  } catch (e: any) {
+    throw new Error('Unknown file format');
+  } catch (e: unknown) {
     // If JSON parse fails, it might be legacy corrupted or just bad file
     if (e instanceof SyntaxError) {
-      throw new Error("Invalid file format");
+      throw new Error('Invalid file format');
     }
     throw e;
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Parsed JSON structures
 async function decryptV2(json: any, password: string): Promise<any> {
   const enc = new TextEncoder();
   const salt = new Uint8Array(json.salt);
@@ -114,30 +116,30 @@ async function decryptV2(json: any, password: string): Promise<any> {
   const data = new Uint8Array(json.data);
 
   const keyMaterial = await crypto.subtle.importKey(
-    "raw",
+    'raw',
     enc.encode(password),
-    { name: "PBKDF2" },
+    { name: 'PBKDF2' },
     false,
-    ["deriveKey"]
+    ['deriveKey']
   );
 
   const key = await crypto.subtle.deriveKey(
     {
-      name: "PBKDF2",
+      name: 'PBKDF2',
       salt: salt,
       iterations: 100000,
-      hash: "SHA-256",
+      hash: 'SHA-256',
     },
     keyMaterial,
-    { name: "AES-GCM", length: 256 },
+    { name: 'AES-GCM', length: 256 },
     false,
-    ["decrypt"]
+    ['decrypt']
   );
 
   try {
     const decrypted = await crypto.subtle.decrypt(
       {
-        name: "AES-GCM",
+        name: 'AES-GCM',
         iv: iv,
       },
       key,
@@ -145,19 +147,21 @@ async function decryptV2(json: any, password: string): Promise<any> {
     );
     const dec = new TextDecoder();
     return JSON.parse(dec.decode(decrypted));
-  } catch (e) {
-    throw new Error("Incorrect password or corrupted file");
+  } catch {
+    throw new Error('Incorrect password or corrupted file');
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns parsed JSON
 function decryptLegacy(fileContent: string, password: string): any {
   try {
     const decrypted = sjcl.decrypt(password, fileContent);
     return JSON.parse(decrypted);
-  } catch (e: any) {
+  } catch (e: unknown) {
     // SJCL throws specific exceptions, but we just want to bubble "Incorrect password"
-    if (e.message && (e.message.indexOf("corrupt") !== -1 || e.message.indexOf("invalid") !== -1)) {
-      throw new Error("Incorrect password or corrupted file");
+    const error = e as Error;
+    if (error.message && (error.message.indexOf('corrupt') !== -1 || error.message.indexOf('invalid') !== -1)) {
+      throw new Error('Incorrect password or corrupted file');
     }
     throw e;
   }
