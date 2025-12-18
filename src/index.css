@@ -95,7 +95,8 @@
   .tab-button-active {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
-    box-shadow: 0 10px 15px -3px hsl(var(--primary) / 0.25),
+    box-shadow:
+      0 10px 15px -3px hsl(var(--primary) / 0.25),
       0 4px 6px -4px hsl(var(--primary) / 0.25);
   }
 }

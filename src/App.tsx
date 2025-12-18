@@ -19,6 +19,7 @@ import {
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
 import { Label } from './components/ui/Label';
+import { PasswordStrengthMeter } from './components/ui/PasswordStrengthMeter';
 import { encryptData, decryptData, type Cookie } from './utils/crypto';
 import {
   getAllCookies,
@@ -146,7 +147,9 @@ function App() {
       }
 
       setStatus('success');
-      setMessage(`Successfully backed up ${cookiesToBackup.length} cookies from ${selectedCount} domains!`);
+      setMessage(
+        `Successfully backed up ${cookiesToBackup.length} cookies from ${selectedCount} domains!`
+      );
       setPassword('');
       setConfirmPassword('');
       setBackupStep('password');
@@ -249,10 +252,11 @@ function App() {
     <button
       type="button"
       onClick={onChange}
-      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 ${checked
+      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 ${
+        checked
           ? 'bg-primary border-primary text-primary-foreground'
           : 'bg-transparent border-muted-foreground/40 hover:border-primary/60'
-        }`}
+      }`}
     >
       {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
     </button>
@@ -276,8 +280,9 @@ function App() {
             setActiveTab('backup');
             resetState();
           }}
-          className={`tab-button ${activeTab === 'backup' ? 'tab-button-active' : 'tab-button-inactive'
-            }`}
+          className={`tab-button ${
+            activeTab === 'backup' ? 'tab-button-active' : 'tab-button-inactive'
+          }`}
         >
           <Download className="w-4 h-4" />
           Backup
@@ -287,8 +292,9 @@ function App() {
             setActiveTab('restore');
             resetState();
           }}
-          className={`tab-button ${activeTab === 'restore' ? 'tab-button-active' : 'tab-button-inactive'
-            }`}
+          className={`tab-button ${
+            activeTab === 'restore' ? 'tab-button-active' : 'tab-button-inactive'
+          }`}
         >
           <Upload className="w-4 h-4" />
           Restore
@@ -312,6 +318,7 @@ function App() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
+                <PasswordStrengthMeter password={password} />
               </div>
 
               <div className="space-y-2">
@@ -366,11 +373,21 @@ function App() {
 
               {/* Select All / Deselect All */}
               <div className="flex gap-2">
-                <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={selectAll}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="flex-1 text-xs"
+                  onClick={selectAll}
+                >
                   <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
                   Select All
                 </Button>
-                <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={deselectAll}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="flex-1 text-xs"
+                  onClick={deselectAll}
+                >
                   <Square className="w-3.5 h-3.5 mr-1.5" />
                   Deselect All
                 </Button>
@@ -381,11 +398,17 @@ function App() {
                 {filteredDomains.map((group) => (
                   <label
                     key={group.domain}
-                    className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
-                      }`}
+                    className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                      group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                    }`}
                   >
-                    <Checkbox checked={group.selected} onChange={() => toggleDomain(group.domain)} />
-                    <span className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    <Checkbox
+                      checked={group.selected}
+                      onChange={() => toggleDomain(group.domain)}
+                    />
+                    <span
+                      className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}
+                    >
                       {group.domain}
                     </span>
                     <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
@@ -480,11 +503,21 @@ function App() {
 
             {/* Select All / Deselect All */}
             <div className="flex gap-2">
-              <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={selectAll}>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1 text-xs"
+                onClick={selectAll}
+              >
                 <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
                 Select All
               </Button>
-              <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={deselectAll}>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1 text-xs"
+                onClick={deselectAll}
+              >
                 <Square className="w-3.5 h-3.5 mr-1.5" />
                 Deselect All
               </Button>
@@ -495,11 +528,14 @@ function App() {
               {filteredDomains.map((group) => (
                 <label
                   key={group.domain}
-                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
-                    }`}
+                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                    group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                  }`}
                 >
                   <Checkbox checked={group.selected} onChange={() => toggleDomain(group.domain)} />
-                  <span className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <span
+                    className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}
+                  >
                     {group.domain}
                   </span>
                   <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
@@ -537,12 +573,13 @@ function App() {
         {/* Status Message */}
         {message && (
           <div
-            className={`p-4 rounded-xl text-sm font-medium ${status === 'error'
+            className={`p-4 rounded-xl text-sm font-medium ${
+              status === 'error'
                 ? 'bg-destructive/10 text-destructive border border-destructive/20'
                 : status === 'success'
                   ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
                   : 'bg-secondary text-secondary-foreground'
-              }`}
+            }`}
           >
             {message}
           </div>
@@ -559,7 +596,11 @@ function App() {
                 <AlertTriangle className="w-4 h-4 text-yellow-500" />
                 {warningCount} cookie{warningCount > 1 ? 's' : ''} need attention
               </span>
-              {showWarnings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showWarnings ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </button>
 
             {showWarnings && (
@@ -567,7 +608,10 @@ function App() {
                 {restoreDetails
                   .filter((d) => d.status !== 'success')
                   .map((detail, idx) => (
-                    <div key={`${detail.domain}-${detail.name}-${idx}`} className="p-3 flex items-start gap-3 text-xs">
+                    <div
+                      key={`${detail.domain}-${detail.name}-${idx}`}
+                      className="p-3 flex items-start gap-3 text-xs"
+                    >
                       {detail.status === 'skipped' ? (
                         <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
                       ) : (
@@ -576,7 +620,9 @@ function App() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">{detail.name}</p>
                         <p className="text-muted-foreground truncate">{detail.domain}</p>
-                        {detail.reason && <p className="text-muted-foreground mt-1">{detail.reason}</p>}
+                        {detail.reason && (
+                          <p className="text-muted-foreground mt-1">{detail.reason}</p>
+                        )}
                       </div>
                     </div>
                   ))}
