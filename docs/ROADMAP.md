@@ -1,94 +1,42 @@
-# Cookie Vault Roadmap
+# 🗺️ Product Roadmap
 
-A comprehensive plan to make Cookie Vault the **definitive** cookie backup solution.
-
----
-
-## Completed ✅
-
-### MVP: Backup & Restore
-
-- AES-256 encryption with Web Crypto API
-- Legacy `.ckz` file support (SJCL)
-- Chrome extension with popup UI
-
-### Phase 1: MCAF Fixes
-
-- Package naming, Prettier, ESLint, comprehensive tests
-
-### Phase 2: UI Enhancements
-
-- Password confirmation, restore warnings, detailed results
-
-### Phase 3: Selective Backup/Restore
-
-- Domain grouping, search/filter, Select All/Deselect All
-
-### Phase 4: UI/UX Polish
-
-- High-contrast tab selection, custom checkboxes
-- 60-30-10 color system, no pure black
+## Status Key
+- ✅ **Done**: Completed and merged.
+- 🚧 **In Progress**: Currently being worked on.
+- 📅 **Planned**: Scheduled for a future release.
+- 🔮 **Future**: Under consideration.
 
 ---
 
-## In Progress 🔄
+## 🚀 Version History & Plan
 
-### Phase 5: Security Hardening
+### v1.0.0 - Foundation (Released) ✅
+- [x] Basic Backup & Restore functionality.
+- [x] AES-256-GCM Encryption.
+- [x] Local-first storage.
+- [x] Password protection.
 
-- [ ] Password strength meter with visual feedback
-- [ ] Backup file integrity verification (checksums)
-- [ ] Password hint (optional, encrypted)
-- [ ] Biometric unlock (WebAuthn) - future
-- [ ] Two-factor encryption - future
+### v1.1.0 - The "Power User" Update (Current) ✅
+- [x] **Netscape HTTP Cookie File Export**: Compatibility with `wget`, `curl`, `yt-dlp`.
+- [x] **JDownloader Support**: JSON export with clipboard integration.
+- [x] **Design System Overhaul**: "Liquid Glass" aesthetics and Apple HIG compliance.
+- [x] **PRG Gold Tier Compliance**: Full documentation, brand assets, and repo standardization.
+
+### v1.2.0 - Cross-Browser Expansion (Next) 📅
+- [ ] **Firefox Support**: Adapt manifest for Gecko engine.
+- [ ] **Safari Support**: Investigate Xcode conversion requirements.
+- [ ] **Cross-Browser Sync**: Manual file transfer validation between engines.
+
+### v1.3.0 - Cloud & Convenience 🔮
+- [ ] **Optional Cloud Sync**: Encrypted E2E backup to Google Drive/Dropbox.
+- [ ] **Auto-Backup**: Scheduled local backups.
+- [ ] **Selective Restore**: Allow users to restore cookies for specific domains only.
 
 ---
 
-## Future Phases 📋
+## 🐛 Known Issues / Backlog
 
-### Phase 6: Cloud Sync & Profiles
-
-- Multiple backup profiles (Work, Personal, Dev)
-- Cloud storage integration (Google Drive, Dropbox)
-- Auto-sync on browser close
-- Cross-device restore via QR code
-
-### Phase 7: Smart Cookie Management
-
-- Cookie health dashboard (expiring soon)
-- Domain categorization (Social, Shopping, Work)
-- Sensitive cookie detection
-- Cookie comparison (diff between backups)
-
-### Phase 8: Advanced Restore Options
-
-- Merge mode (add only, don't overwrite)
-- Domain mapping (restore to staging)
-- Restore to specific date (version history)
-
-### Phase 9: Automation & Scheduling
-
-- Scheduled auto-backups
-- Rotate old backups (keep last N)
-- CLI companion tool
-- Webhook notifications
-
-### Phase 10: Enterprise Features
-
-- Team sharing (encrypted URLs)
-- Cookie templates for dev environments
-- Import from other tools
-- Keyboard shortcuts
-
-### Phase 11: Accessibility & i18n
-
-- Full keyboard navigation
-- Screen reader support (ARIA)
-- Multi-language support
-- RTL language support
-
-### Phase 12: Analytics & Insights
-
-- Backup history with statistics
-- Cookie trends over time
-- Privacy score
-- GDPR compliance reports
+| Severity | Issue | Status |
+| :--- | :--- | :--- |
+| Low | UI glitch on very small popup windows (<400px width) | 🚧 Investigating |
+| Medium | Large backups (>50MB) may lag heavily during encryption | 📅 Optimization planned for v1.2 |

@@ -1,191 +1,171 @@
 <div align="center">
 
-# 🔐 Cookie Vault
+![Cookie Vault Banner](docs/images/banner_large.png)
 
-**Secure backup and restoration of your browser cookies**
+# Cookie Vault
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
-[![Chrome Extension](https://img.shields.io/badge/Manifest-V3-4285F4?logo=googlechrome)](https://developer.chrome.com/docs/extensions/mv3/)
-[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)](https://vite.dev/)
+**Secure backup and restoration of your browser cookies for seamless migrations.**
 
-_Never lose your login sessions again._
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![PRG: Gold](https://img.shields.io/badge/PRG-Gold-FFD700)](https://github.com/Zendevve/cookie-vault)
+[![Version](https://img.shields.io/badge/version-1.1.0-green)](package.json)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
+
+[Features](#-features) • [Background](#-background-story) • [Getting Started](#-getting-started) • [Development](#-development) • [Roadmap](#-roadmap)
 
 </div>
 
 ---
 
-## ✨ What is Cookie Vault?
+## ✨ Features
 
-**Cookie Vault** is a Chrome extension that lets you **backup all your browser cookies** to an encrypted file and **restore them** whenever you need — perfect for:
+**Cookie Vault** is a local-first Chrome extension designed for privacy-conscious users who need to migrate browser sessions between devices or browsers without re-authenticating.
 
-- 🖥️ **Migrating to a new computer** without re-logging into every website
-- 💾 **Fresh OS installs** while keeping all your sessions intact
-- 🔄 **Switching browsers** or profiles seamlessly
-- 🛡️ **Secure backup** of your authentication state
-
-<div align="center">
-  <img src="legacy_source/demo.gif" alt="Cookie Vault Demo" width="400">
-</div>
-
----
-
-## 🚀 Quick Start
-
-### Installation (Development)
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/cookie-vault.git
-cd cookie-vault
-
-# Install dependencies
-npm install
-
-# Build the extension
-npm run build
-```
-
-### Load in Chrome
-
-1. Open `chrome://extensions`
-2. Enable **Developer mode** (toggle in top right)
-3. Click **Load unpacked**
-4. Select the `dist/` folder
+- **🔒 Military-Grade Encryption**: Uses AES-256-GCM via the Web Crypto API. Your password never leaves your device.
+- **📂 Universal Formats**:
+  - Backup to encrypted `.cv` files.
+  - Export to Netscape HTTP Cookie File format (compatible with `wget`, `curl`, `yt-dlp`).
+  - Export to JSON for JDownloader.
+- **🛡️ Zero Standing Privileges**: Runs with minimal permissions (`activeTab`) and only requests broad access when you explicitly initiate a backup.
+- **🍪 Legacy Support**: Fully compatible with `.ckz` files from older cookie backup extensions.
+- **✈️ Offline Ready**: Fully functional without an internet connection.
 
 ---
 
-## 📖 Usage
+## 📖 Background Story
 
-### Backup Your Cookies
+Migrating to a new computer or switching browsers is often a painful process of logging into dozens of websites again. Existing tools were either outdated, closed-source, or required sending data to a cloud server.
 
-1. Click the Cookie Vault icon in your browser toolbar
-2. Enter a **strong password** (you'll need this to restore!)
-3. Click **Backup Cookies**
-4. Save the `.cv` file somewhere safe
-
-### Restore Your Cookies
-
-1. Click the Cookie Vault icon
-2. Switch to the **Restore** tab
-3. Select your `.cv` backup file
-4. Enter your password
-5. Click **Restore Cookies**
-
-> **💡 Tip:** Cookie Vault also supports legacy `.ckz` files from the original extension!
+**Cookie Vault** was built to solve this problem with a "Security First" philosophy. We believe your session data is sensitive and should never leave your control. By implementing **Zero Standing Privileges** and **Local-First Architecture**, we ensure that even if the extension were compromised, your data remains safe.
 
 ---
 
-## 🔒 Security
-
-Cookie Vault takes your security seriously:
-
-| Feature            | Implementation                   |
-| ------------------ | -------------------------------- |
-| **Encryption**     | AES-256-GCM via Web Crypto API   |
-| **Key Derivation** | PBKDF2 with 100,000 iterations   |
-| **Legacy Support** | SJCL decryption for `.ckz` files |
-| **No Cloud**       | All data stays on your device    |
-
-Your password **never leaves your browser**. Backups are encrypted locally before download.
-
----
-
-## 🛠️ Development
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
 - npm 9+
 
-### Commands
+### Installation
 
-| Command          | Description               |
-| ---------------- | ------------------------- |
-| `npm run dev`    | Start dev server with HMR |
-| `npm run build`  | Build for production      |
-| `npm run test`   | Run tests (Vitest)        |
-| `npm run lint`   | Run ESLint                |
-| `npm run format` | Format with Prettier      |
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Zendevve/cookie-vault.git
+   cd cookie-vault
+   ```
 
-### Project Structure
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Build the extension**
+   ```bash
+   npm run build
+   ```
+
+4. **Load in Chrome/Edge/Brave**
+   - Open `chrome://extensions`
+   - Enable **Developer mode**
+   - Click **Load unpacked**
+   - Select the `dist/` folder
+
+---
+
+## 📂 What's Inside?
 
 ```
 cookie-vault/
 ├── src/
-│   ├── components/ui/    # Reusable UI components
-│   ├── utils/            # Crypto & cookie utilities
-│   ├── App.tsx           # Main application
-│   └── main.tsx          # Entry point
-├── dist/                 # Built extension (load this in Chrome)
-├── docs/                 # Documentation
-└── manifest.json         # Chrome Extension manifest
+│   ├── components/       # React UI components
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Core logic (crypto, cookies)
+│   ├── assets/          # Static assets
+│   ├── App.tsx          # Main entry point
+│   └── manifest.json    # Extension manifest
+├── docs/                # Documentation & Assets
+├── .github/             # GitHub templates & workflows
+└── dist/                # Production build artifacts
 ```
+
+---
+
+## ⚙️ Configuration
+
+Cookie Vault works out of the box, but you can customize the build process:
+
+| Environment Variable | Description |
+| -------------------- | ----------- |
+| `VITE_APP_VERSION`   | Override the version number displayed in the UI |
 
 ---
 
 ## 🧪 Testing
 
+We use **Vitest** for unit and integration testing.
+
 ```bash
 # Run all tests
 npm run test
 
-# Run with coverage
-npm run test -- --coverage
+# Run with coverage report
+npm run test:coverage
 ```
 
-**Current test coverage:**
-
-- ✅ Encryption/decryption (round-trip)
-- ✅ Legacy SJCL format support
-- ✅ Cookie restoration logic
-- ✅ HSTS retry mechanism
+Our test suite covers:
+- ✅ Crypto round-trip (Encryption/Decryption)
+- ✅ Partitioned cookie handling (CHIPS)
+- ✅ Legacy format imports
+- ✅ Password validation logic
 
 ---
 
-## 📋 Roadmap
+## 🗺️ Roadmap
 
-- [x] **v1.0** — Core backup/restore functionality
-- [x] **v1.0** — Legacy `.ckz` file support
-- [ ] **v1.1** — Selective backup by domain
-- [ ] **v1.1** — Restore warnings UI
-- [ ] **v1.2** — Password strength indicator
-- [ ] **v2.0** — Firefox support
+We follow a structured roadmap located in [docs/ROADMAP.md](docs/ROADMAP.md).
+
+- [x] **v1.0.0**: Initial Release (AES-256 Encryption)
+- [x] **v1.1.0**: Netscape & JDownloader Exports (Current)
+- [ ] **v1.2.0**: Firefox Support (Gecko)
+- [ ] **v1.3.0**: Encrypted Cloud Sync (Optional)
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our development guidelines:
+Contributions are welcome! Please read our [Contributing Guidelines](.github/CONTRIBUTING.md) and [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Run tests (`npm run test`)
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 🛡️ Security
+
+For security vulnerabilities, please refer to our [Security Policy](.github/SECURITY.md).
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+Distributed under the **GNU GPLv3** License. See [LICENSE](LICENSE) for more information.
 
 ---
 
-## 🙏 Acknowledgments
+## 👏 Credits
 
-- Original [Cookie Backup and Restore](https://chrome.google.com/webstore/detail/cookie-backup-and-restore/cndobhdcpmpilkebeebeecgminfhkpcj) extension
-- [SJCL](https://bitwiseshiftleft.github.io/sjcl/) for legacy encryption support
-- Built with [Vite](https://vite.dev/), [React](https://react.dev/), and [CRXJS](https://crxjs.dev/vite-plugin)
+See [CREDITS.md](.github/CREDITS.md) for the full list of contributors and acknowledgement of open-source libraries used in this project.
 
 ---
 
 <div align="center">
 
-**Made with ❤️ for seamless browser migrations**
+[![Cookie Vault Icon](docs/images/icon.png)](https://github.com/Zendevve/cookie-vault)
 
-_Last updated: December 2025_
+**Made with ❤️ by Zendevve**
 
 </div>
