@@ -1,0 +1,74 @@
+name: Build & Verify
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test -- --run
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Create deterministic ZIP
+        run: |
+          cd dist
+          # Normalize timestamps to epoch for reproducibility
+          find . -exec touch -t 197001010000.00 {} +
+          # Create ZIP with sorted file order, no extra attributes
+          zip -rX ../cookie-vault-${{ github.ref_name || 'dev' }}.zip .
+
+      - name: Generate checksums
+        run: |
+          sha256sum cookie-vault-*.zip > checksums.txt
+          cat checksums.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: |
+            cookie-vault-*.zip
+            checksums.txt
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            cookie-vault-*.zip
+            checksums.txt
+          body: |
+            ## Verification
+
+            To verify this build matches the source code:
+
+            1. Clone the repo and checkout this tag
+            2. Run `npm ci && npm run build`
+            3. Run `./scripts/build-deterministic.sh`
+            4. Compare the SHA256 hash with `checksums.txt`
+
+            See [SECURITY.md](SECURITY.md) for detailed instructions.

@@ -123,6 +123,38 @@ If no new rule is detected → do not update the file.
 - Use React functional components with hooks.
 - Use TailwindCSS for styling.
 
+### Design (Apple HIG)
+
+Reference: `docs/DESIGN_SYSTEM.md`
+
+**Accessibility:**
+
+- Minimum 4.5:1 color contrast ratio for text
+- 44×44pt minimum touch targets (28×28pt absolute minimum)
+- Never rely on color alone — always pair with icons/shapes
+- Support reduced motion preference via `prefers-reduced-motion`
+- Provide accessible labels for all interactive elements
+
+**Color:**
+
+- Use semantic color tokens, not hard-coded values
+- Support both light and dark modes
+- Never use pure black (#000) for dark backgrounds — causes halation
+- Elevated surfaces should be lighter than base in dark mode
+
+**Layout:**
+
+- 12pt padding around bezeled elements
+- 24pt padding around non-bezeled elements
+- Respect safe areas and system margins
+- Content extends to fill available space
+
+**Motion:**
+
+- Keep transitions short (200-300ms)
+- Use ease-out for natural feel
+- Disable animations when reduced motion is preferred
+
 ### Critical (NEVER violate)
 
 - Never commit secrets, keys, connection strings
