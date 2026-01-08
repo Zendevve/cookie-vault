@@ -91,9 +91,36 @@ export async function getAllCookies(): Promise<Cookie[]> {
     ];
   }
 
-  const cookies = await browser.cookies.getAll({});
+  // Fetch standard (unpartitioned) cookies
+  const unpartitioned = await browser.cookies.getAll({});
+
+  // Fetch partitioned cookies (CHIPS - Cookies Having Independent Partitioned State)
+  // This ensures we capture cookies set with the Partitioned attribute (Chrome 119+)
+  let partitioned: typeof unpartitioned = [];
+  try {
+    // The partitionKey parameter with empty object fetches all partitioned cookies
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partitionKey is not typed yet
+    partitioned = await browser.cookies.getAll({ partitionKey: {} } as any);
+  } catch {
+    // Older browsers may not support partitionKey, silently ignore
+    console.debug('Partitioned cookies not supported in this browser');
+  }
+
+  // Merge and deduplicate cookies
+  // Use composite key of domain + name + path + partitionKey to identify unique cookies
+  const allCookies = [...unpartitioned, ...partitioned];
+  const seen = new Set<string>();
+  const deduplicated = allCookies.filter((cookie) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partitionKey is not typed
+    const partitionKey = (cookie as any).partitionKey?.topLevelSite || '';
+    const key = `${cookie.domain}|${cookie.name}|${cookie.path}|${partitionKey}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   // Transform to match our strict interface if needed, but usually it matches
-  return cookies as unknown as Cookie[];
+  return deduplicated as unknown as Cookie[];
 }
 
 export async function restoreCookies(

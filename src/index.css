@@ -108,4 +108,37 @@
     transition-duration: 200ms;
     transition-timing-function: ease-out;
   }
+
+  /* Minimum touch target (Apple HIG: 44x44pt) */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Minimum touch target (absolute minimum: 28x28pt) */
+  .touch-target-min {
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
+
+/* Reduced motion support (Apple HIG: Accessibility) */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+@layer base {
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }

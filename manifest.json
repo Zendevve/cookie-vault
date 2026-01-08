@@ -1,10 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Cookie Vault",
-  "version": "1.0.0",
-  "description": "Modern, secure cookie backup and restoration tool.",
-  "permissions": ["cookies", "downloads", "storage"],
-  "host_permissions": ["<all_urls>"],
+  "version": "1.1.0",
+  "description": "Secure cookie backup, restore, and export for yt-dlp, wget, curl, and JDownloader.",
+  "permissions": [
+    "cookies",
+    "downloads",
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [],
+  "offline_enabled": true,
   "action": {
     "default_popup": "index.html",
     "default_title": "Cookie Vault"

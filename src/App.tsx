@@ -15,6 +15,10 @@ import {
   Square,
   ArrowLeft,
   Check,
+  Share2,
+  FileText,
+  Clipboard,
+  CheckCheck,
 } from 'lucide-react';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
@@ -30,8 +34,10 @@ import {
   type CookieRestoreDetail,
   type DomainGroup,
 } from './utils/cookies';
+import { downloadNetscape } from './utils/netscape';
+import { copyJDownloaderToClipboard, downloadJDownloader } from './utils/jdownloader';
 
-type Tab = 'backup' | 'restore';
+type Tab = 'backup' | 'restore' | 'export';
 type BackupStep = 'password' | 'preview';
 type RestoreStep = 'file' | 'preview';
 
@@ -45,6 +51,7 @@ function App() {
   const [file, setFile] = useState<File | null>(null);
   const [restoreDetails, setRestoreDetails] = useState<CookieRestoreDetail[]>([]);
   const [showWarnings, setShowWarnings] = useState(false);
+  const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
   // Phase 3: Selective backup/restore state
   const [backupStep, setBackupStep] = useState<BackupStep>('password');
@@ -243,6 +250,60 @@ function App() {
     setSearchQuery('');
     setBackupStep('password');
     setRestoreStep('file');
+    setCopiedToClipboard(false);
+  };
+
+  // Export handlers for CLI tools
+  const handleExportNetscape = async () => {
+    try {
+      setStatus('loading');
+      setMessage('Fetching cookies...');
+
+      const cookies = await getAllCookies();
+      await downloadNetscape(cookies, 'cookies.txt');
+
+      setStatus('success');
+      setMessage(`Exported ${cookies.length} cookies for yt-dlp/wget/curl`);
+    } catch (err) {
+      setStatus('error');
+      setMessage(err instanceof Error ? err.message : 'Export failed');
+    }
+  };
+
+  const handleExportJDownloader = async () => {
+    try {
+      setStatus('loading');
+      setMessage('Fetching cookies...');
+
+      const cookies = await getAllCookies();
+      await downloadJDownloader(cookies, 'cookies.json');
+
+      setStatus('success');
+      setMessage(`Exported ${cookies.length} cookies for JDownloader`);
+    } catch (err) {
+      setStatus('error');
+      setMessage(err instanceof Error ? err.message : 'Export failed');
+    }
+  };
+
+  const handleCopyJDownloader = async () => {
+    try {
+      setStatus('loading');
+      setMessage('Copying to clipboard...');
+
+      const cookies = await getAllCookies();
+      await copyJDownloaderToClipboard(cookies);
+
+      setCopiedToClipboard(true);
+      setStatus('success');
+      setMessage(`Copied ${cookies.length} cookies to clipboard`);
+
+      // Reset clipboard feedback after 2 seconds
+      setTimeout(() => setCopiedToClipboard(false), 2000);
+    } catch (err) {
+      setStatus('error');
+      setMessage(err instanceof Error ? err.message : 'Copy failed');
+    }
   };
 
   const warningCount = restoreDetails.filter((d) => d.status !== 'success').length;
@@ -252,11 +313,10 @@ function App() {
     <button
       type="button"
       onClick={onChange}
-      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 ${
-        checked
-          ? 'bg-primary border-primary text-primary-foreground'
-          : 'bg-transparent border-muted-foreground/40 hover:border-primary/60'
-      }`}
+      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 ${checked
+        ? 'bg-primary border-primary text-primary-foreground'
+        : 'bg-transparent border-muted-foreground/40 hover:border-primary/60'
+        }`}
     >
       {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
     </button>
@@ -280,9 +340,8 @@ function App() {
             setActiveTab('backup');
             resetState();
           }}
-          className={`tab-button ${
-            activeTab === 'backup' ? 'tab-button-active' : 'tab-button-inactive'
-          }`}
+          className={`tab-button ${activeTab === 'backup' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
         >
           <Download className="w-4 h-4" />
           Backup
@@ -292,12 +351,22 @@ function App() {
             setActiveTab('restore');
             resetState();
           }}
-          className={`tab-button ${
-            activeTab === 'restore' ? 'tab-button-active' : 'tab-button-inactive'
-          }`}
+          className={`tab-button ${activeTab === 'restore' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
         >
           <Upload className="w-4 h-4" />
           Restore
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('export');
+            resetState();
+          }}
+          className={`tab-button ${activeTab === 'export' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
+        >
+          <Share2 className="w-4 h-4" />
+          Export
         </button>
       </div>
 
@@ -398,9 +467,8 @@ function App() {
                 {filteredDomains.map((group) => (
                   <label
                     key={group.domain}
-                    className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
-                      group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
-                    }`}
+                    className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                      }`}
                   >
                     <Checkbox
                       checked={group.selected}
@@ -433,153 +501,241 @@ function App() {
               </Button>
             </div>
           )
-        ) : restoreStep === 'file' ? (
-          <form onSubmit={handleRestorePreview} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="restore-file">Backup File</Label>
-              <div className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-muted/30 hover:border-primary/40 transition-all cursor-pointer relative">
-                <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center">
-                  <FileKey className="w-6 h-6 text-muted-foreground" />
+        ) : activeTab === 'restore' ? (
+          restoreStep === 'file' ? (
+            <form onSubmit={handleRestorePreview} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="restore-file">Backup File</Label>
+                <div className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-muted/30 hover:border-primary/40 transition-all cursor-pointer relative">
+                  <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center">
+                    <FileKey className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {file ? file.name : 'Click to select .cv or .ckz file'}
+                  </span>
+                  <input
+                    id="restore-file"
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    accept=".json,.ckz,.cv,.txt"
+                  />
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {file ? file.name : 'Click to select .cv or .ckz file'}
-                </span>
-                <input
-                  id="restore-file"
-                  type="file"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  accept=".json,.ckz,.cv,.txt"
-                />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="restore-password">Decryption Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="restore-password"
-                  type="password"
-                  placeholder="Enter password"
-                  className="pl-9"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="restore-password">Decryption Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="restore-password"
+                    type="password"
+                    placeholder="Enter password"
+                    className="pl-9"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
-            <Button type="submit" className="w-full" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Decrypting...' : 'Next: Select Domains'}
-            </Button>
-          </form>
-        ) : (
-          /* Restore Preview Step */
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setRestoreStep('file')}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-              <span className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-full">
-                {selectedCount}/{domainGroups.length} domains · {totalCookiesSelected} cookies
-              </span>
-            </div>
-
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search domains..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Select All / Deselect All */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1 text-xs"
-                onClick={selectAll}
-              >
-                <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
-                Select All
+              <Button type="submit" className="w-full" disabled={status === 'loading'}>
+                {status === 'loading' ? 'Decrypting...' : 'Next: Select Domains'}
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1 text-xs"
-                onClick={deselectAll}
-              >
-                <Square className="w-3.5 h-3.5 mr-1.5" />
-                Deselect All
-              </Button>
-            </div>
-
-            {/* Domain List */}
-            <div className="max-h-52 overflow-y-auto border border-border rounded-xl divide-y divide-border bg-card">
-              {filteredDomains.map((group) => (
-                <label
-                  key={group.domain}
-                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
-                    group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
-                  }`}
+            </form>
+          ) : (
+            /* Restore Preview Step */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setRestoreStep('file')}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Checkbox checked={group.selected} onChange={() => toggleDomain(group.domain)} />
-                  <span
-                    className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </button>
+                <span className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-full">
+                  {selectedCount}/{domainGroups.length} domains · {totalCookiesSelected} cookies
+                </span>
+              </div>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search domains..."
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Select All / Deselect All */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="flex-1 text-xs"
+                  onClick={selectAll}
+                >
+                  <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
+                  Select All
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="flex-1 text-xs"
+                  onClick={deselectAll}
+                >
+                  <Square className="w-3.5 h-3.5 mr-1.5" />
+                  Deselect All
+                </Button>
+              </div>
+
+              {/* Domain List */}
+              <div className="max-h-52 overflow-y-auto border border-border rounded-xl divide-y divide-border bg-card">
+                {filteredDomains.map((group) => (
+                  <label
+                    key={group.domain}
+                    className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                      }`}
                   >
-                    {group.domain}
-                  </span>
-                  <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                    {group.cookies.length}
-                  </span>
-                </label>
-              ))}
-              {filteredDomains.length === 0 && (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  No domains match your search
+                    <Checkbox checked={group.selected} onChange={() => toggleDomain(group.domain)} />
+                    <span
+                      className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'}`}
+                    >
+                      {group.domain}
+                    </span>
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                      {group.cookies.length}
+                    </span>
+                  </label>
+                ))}
+                {filteredDomains.length === 0 && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    No domains match your search
+                  </div>
+                )}
+              </div>
+
+              <Button
+                type="button"
+                className="w-full"
+                onClick={handleRestoreConfirm}
+                disabled={status === 'loading' || selectedCount === 0}
+              >
+                {status === 'loading' ? 'Restoring...' : `Restore ${totalCookiesSelected} Cookies`}
+              </Button>
+
+              {status === 'loading' && progress.total > 0 && (
+                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary h-full transition-all duration-300"
+                    style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                  />
                 </div>
               )}
             </div>
+          )
+        ) : (
+          /* Export Tab */
+          <div className="space-y-4">
+            <div className="text-center mb-4">
+              <p className="text-sm text-muted-foreground">
+                Export cookies for use with CLI tools like yt-dlp, wget, curl, and JDownloader.
+              </p>
+            </div>
 
-            <Button
-              type="button"
-              className="w-full"
-              onClick={handleRestoreConfirm}
-              disabled={status === 'loading' || selectedCount === 0}
-            >
-              {status === 'loading' ? 'Restoring...' : `Restore ${totalCookiesSelected} Cookies`}
-            </Button>
-
-            {status === 'loading' && progress.total > 0 && (
-              <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-primary h-full transition-all duration-300"
-                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                />
+            {/* yt-dlp / wget / curl Export */}
+            <div className="border border-border rounded-xl p-4 space-y-3 bg-card">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sm">Netscape Format</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    For yt-dlp, wget, curl, gallery-dl, aria2c
+                  </p>
+                </div>
               </div>
-            )}
+              <Button
+                type="button"
+                className="w-full"
+                onClick={handleExportNetscape}
+                disabled={status === 'loading'}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download cookies.txt
+              </Button>
+            </div>
+
+            {/* JDownloader Export */}
+            <div className="border border-border rounded-xl p-4 space-y-3 bg-card">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FileKey className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sm">JDownloader Format</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    JSON format compatible with JDownloader 2
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={handleCopyJDownloader}
+                  disabled={status === 'loading'}
+                >
+                  {copiedToClipboard ? (
+                    <>
+                      <CheckCheck className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Clipboard className="w-4 h-4 mr-2" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1"
+                  onClick={handleExportJDownloader}
+                  disabled={status === 'loading'}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-secondary/50 rounded-xl p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground mb-1">💡 Usage Tips</p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li><code className="bg-secondary px-1 rounded">yt-dlp --cookies cookies.txt URL</code></li>
+                <li><code className="bg-secondary px-1 rounded">wget --load-cookies cookies.txt URL</code></li>
+                <li>JDownloader: Paste JSON in Settings → Account Manager</li>
+              </ul>
+            </div>
           </div>
         )}
 
         {/* Status Message */}
         {message && (
           <div
-            className={`p-4 rounded-xl text-sm font-medium ${
-              status === 'error'
-                ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                : status === 'success'
-                  ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-                  : 'bg-secondary text-secondary-foreground'
-            }`}
+            className={`p-4 rounded-xl text-sm font-medium ${status === 'error'
+              ? 'bg-destructive/10 text-destructive border border-destructive/20'
+              : status === 'success'
+                ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
+                : 'bg-secondary text-secondary-foreground'
+              }`}
           >
             {message}
           </div>
