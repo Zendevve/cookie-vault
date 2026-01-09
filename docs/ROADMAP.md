@@ -39,4 +39,4 @@
 | Severity | Issue | Status |
 | :--- | :--- | :--- |
 | Low | UI glitch on very small popup windows (<400px width) | 🚧 Investigating |
-| Medium | Large backups (>50MB) may lag heavily during encryption | 📅 Optimization planned for v1.2 |
+| ~~Medium~~ | ~~Large backups (>50MB) may lag heavily during encryption~~ | ✅ **Resolved in v1.1.0** - Chunked encryption with progress tracking |

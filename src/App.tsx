@@ -132,7 +132,10 @@ function App() {
       setStatus('loading');
       setMessage(`Encrypting ${cookiesToBackup.length} cookies...`);
 
-      const blob = await encryptData(cookiesToBackup, password);
+      const blob = await encryptData(cookiesToBackup, password, (current, total) => {
+        setProgress({ current, total });
+        setMessage(`Encrypting ${cookiesToBackup.length} cookies... (${Math.round((current / total) * 100)}%)`);
+      });
 
       // Download
       const url = URL.createObjectURL(blob);
@@ -180,7 +183,10 @@ function App() {
       setStatus('loading');
       setMessage('Reading and decrypting file...');
       const text = await file.text();
-      const cookies: Cookie[] = await decryptData(text, password);
+      const cookies: Cookie[] = await decryptData(text, password, (current, total) => {
+        setProgress({ current, total });
+        setMessage(`Decrypting file... (${Math.round((current / total) * 100)}%)`);
+      });
 
       setAllCookies(cookies);
       const groups = groupCookiesByDomain(cookies);
@@ -499,6 +505,15 @@ function App() {
               >
                 {status === 'loading' ? 'Encrypting...' : `Backup ${totalCookiesSelected} Cookies`}
               </Button>
+
+              {status === 'loading' && progress.total > 0 && (
+                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary h-full transition-all duration-300"
+                    style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                  />
+                </div>
+              )}
             </div>
           )
         ) : activeTab === 'restore' ? (
@@ -541,6 +556,15 @@ function App() {
               <Button type="submit" className="w-full" disabled={status === 'loading'}>
                 {status === 'loading' ? 'Decrypting...' : 'Next: Select Domains'}
               </Button>
+
+              {status === 'loading' && progress.total > 0 && (
+                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary h-full transition-all duration-300"
+                    style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                  />
+                </div>
+              )}
             </form>
           ) : (
             /* Restore Preview Step */
