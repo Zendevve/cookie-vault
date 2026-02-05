@@ -19,22 +19,76 @@ describe('Crypto Utils', () => {
     { name: 'cookie2', value: 'val2' },
   ];
 
-  describe('V2 (WebCrypto) Encryption', () => {
-    it('should encrypt and decrypt data correctly (round trip)', async () => {
+  describe('V3 (Single Pass) Encryption', () => {
+    it('should use v3 format for small data', async () => {
       const encrypted = await encryptData(testData, password);
-      expect(encrypted).toBeInstanceOf(Blob);
+      const text = await blobToText(encrypted);
+      const json = JSON.parse(text);
 
+      expect(json.version).toBe('v3');
+      expect(json.checksum).toBeDefined();
+      expect(json.data).toBeDefined();
+    });
+
+    it('should encrypt and decrypt correctly', async () => {
+      const encrypted = await encryptData(testData, password);
       const text = await blobToText(encrypted);
       const decrypted = await decryptData(text, password);
 
       expect(decrypted).toEqual(testData);
     });
 
-    it('should fail with incorrect password', async () => {
+    it('should fail with incorrect checksum (tampered data)', async () => {
       const encrypted = await encryptData(testData, password);
       const text = await blobToText(encrypted);
+      const json = JSON.parse(text);
 
-      await expect(decryptData(text, 'wrongPassword')).rejects.toThrow('Incorrect password');
+      // Tamper with the checksum
+      json.checksum = 'deadbeefdeadbeef'; // Invalid checksum
+
+      await expect(decryptData(JSON.stringify(json), password)).rejects.toThrow('checksum mismatch');
+    });
+  });
+
+  describe('V4 (Chunked) Encryption', () => {
+    it('should use v4 format for large data (>1MB)', async () => {
+      // Create data larger than 1MB
+      const hugeString = 'x'.repeat(1024 * 1024 + 100);
+      const encrypted = await encryptData(hugeString, password);
+      const text = await blobToText(encrypted);
+      const json = JSON.parse(text);
+
+      expect(json.version).toBe('v4');
+      expect(json.chunks).toBeDefined();
+      expect(Array.isArray(json.chunks)).toBe(true);
+      expect(json.chunks.length).toBeGreaterThan(1); // Should be at least 2 chunks
+    });
+
+    it('should decrypt chunked data correctly', async () => {
+      const hugeString = 'x'.repeat(1024 * 1024 + 100);
+      const encrypted = await encryptData(hugeString, password);
+      const text = await blobToText(encrypted);
+
+      const decrypted = await decryptData(text, password);
+      expect(decrypted).toBe(hugeString);
+    });
+  });
+
+  describe('V2 (Legacy WebCrypto) Compatibility', () => {
+    it('should decrypt v2 format (no checksum)', async () => {
+      // Create v3 data first using standard encryptData
+      const encrypted = await encryptData(testData, password);
+      const text = await blobToText(encrypted);
+      const json = JSON.parse(text);
+
+      // Manually downgrade to v2 format: change version and remove checksum
+      json.version = 'v2';
+      delete json.checksum;
+
+      const v2Payload = JSON.stringify(json);
+      const decrypted = await decryptData(v2Payload, password);
+
+      expect(decrypted).toEqual(testData);
     });
   });
 
