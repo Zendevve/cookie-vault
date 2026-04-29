@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { downloadBlob } from './downloadBlob';
 
+vi.mock('webextension-polyfill', () => ({
+  default: {
+    downloads: { download: vi.fn() },
+  },
+}));
+
 vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
 vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
@@ -9,11 +15,10 @@ describe('downloadBlob', () => {
     vi.clearAllMocks();
   });
 
-  it('should use chrome.downloads when available', async () => {
+  it('should use browser.downloads when available', async () => {
+    const { default: browser } = await import('webextension-polyfill');
     const downloadMock = vi.fn().mockResolvedValue(1);
-    (globalThis as any).chrome = {
-      downloads: { download: downloadMock },
-    };
+    (browser as any).downloads = { download: downloadMock };
 
     const blob = new Blob(['test']);
     await downloadBlob(blob, 'file.txt');
@@ -27,8 +32,9 @@ describe('downloadBlob', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test');
   });
 
-  it('should fallback to anchor click when chrome.downloads is unavailable', async () => {
-    (globalThis as any).chrome = undefined;
+  it('should fallback to anchor click when browser.downloads is unavailable', async () => {
+    const { default: browser } = await import('webextension-polyfill');
+    (browser as any).downloads = undefined;
 
     const clickMock = vi.fn();
     const originalCreateElement = document.createElement;
@@ -49,11 +55,10 @@ describe('downloadBlob', () => {
     document.createElement = originalCreateElement;
   });
 
-  it('should revoke object URL even if chrome.downloads throws', async () => {
+  it('should revoke object URL even if browser.downloads throws', async () => {
+    const { default: browser } = await import('webextension-polyfill');
     const downloadMock = vi.fn().mockRejectedValue(new Error('Download failed'));
-    (globalThis as any).chrome = {
-      downloads: { download: downloadMock },
-    };
+    (browser as any).downloads = { download: downloadMock };
 
     const blob = new Blob(['test']);
     await expect(downloadBlob(blob, 'file.txt')).rejects.toThrow('Download failed');

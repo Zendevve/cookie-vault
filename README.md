@@ -65,7 +65,11 @@ Migrating to a new computer or switching browsers is often a painful process of 
 3. **Build the extension**
 
    ```bash
+   # Chrome / Edge / Brave
    npm run build
+
+   # Firefox
+   npm run build:firefox
    ```
 
 4. **Load in Chrome/Edge/Brave**
@@ -73,6 +77,11 @@ Migrating to a new computer or switching browsers is often a painful process of 
    - Enable **Developer mode**
    - Click **Load unpacked**
    - Select the `dist/` folder
+
+5. **Load in Firefox**
+   - Open `about:debugging#/runtime/this-firefox`
+   - Click **Load Temporary Add-on...**
+   - Select `dist-firefox/manifest.json`
 
 ---
 
@@ -82,15 +91,19 @@ Migrating to a new computer or switching browsers is often a painful process of 
 cookie-vault/
 ├── src/
 │   ├── components/       # React UI components
+│   ├── hooks/           # Custom React hooks
 │   ├── lib/             # Core utilities
 │   ├── utils/           # Business logic (crypto, cookies, formats)
 │   ├── test/            # Test setup
 │   ├── App.tsx          # Main entry point
 │   └── main.tsx         # React root
 ├── docs/                # Documentation & Assets
+├── scripts/             # Build scripts
 ├── .github/             # GitHub templates & workflows
-├── manifest.json        # Extension manifest
-└── dist/                # Production build artifacts
+├── manifest.json        # Chrome manifest
+├── manifest-firefox.json # Firefox manifest
+├── dist/                # Chrome build artifacts
+└── dist-firefox/        # Firefox build artifacts
 ```
 
 ---
