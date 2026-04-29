@@ -1,18 +1,26 @@
 import { useState } from 'react';
-import { Lock, FileKey, ArrowLeft, AlertTriangle, ChevronUp, ChevronDown, CheckCircle, XCircle } from 'lucide-react';
+import {
+  Lock,
+  FileKey,
+  ArrowLeft,
+  AlertTriangle,
+  ChevronUp,
+  ChevronDown,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Label } from './ui/Label';
 import { DomainPicker } from './DomainPicker';
-import { decryptData, type Cookie } from '../utils/crypto';
+import { decryptData } from '../utils/crypto';
 import {
   restoreCookies,
-  groupCookiesByDomain,
   filterCookiesByDomains,
   type RestoreResult,
   type CookieRestoreDetail,
-  type DomainGroup,
 } from '../utils/cookies';
+import { useDomainSelection } from '../hooks/useDomainSelection';
 
 type RestoreStep = 'file' | 'preview';
 
@@ -26,28 +34,7 @@ export function RestoreFlow() {
   const [restoreDetails, setRestoreDetails] = useState<CookieRestoreDetail[]>([]);
   const [showWarnings, setShowWarnings] = useState(false);
 
-  const [allCookies, setAllCookies] = useState<Cookie[]>([]);
-  const [domainGroups, setDomainGroups] = useState<DomainGroup[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const selectedCount = domainGroups.filter((g) => g.selected).length;
-  const totalCookiesSelected = domainGroups
-    .filter((g) => g.selected)
-    .reduce((sum, g) => sum + g.cookies.length, 0);
-
-  const toggleDomain = (domain: string) => {
-    setDomainGroups((prev) =>
-      prev.map((g) => (g.domain === domain ? { ...g, selected: !g.selected } : g))
-    );
-  };
-
-  const selectAll = () => {
-    setDomainGroups((prev) => prev.map((g) => ({ ...g, selected: true })));
-  };
-
-  const deselectAll = () => {
-    setDomainGroups((prev) => prev.map((g) => ({ ...g, selected: false })));
-  };
+  const ds = useDomainSelection();
 
   const handleRestorePreview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,14 +48,12 @@ export function RestoreFlow() {
       setStatus('loading');
       setMessage('Reading and decrypting file...');
       const text = await file.text();
-      const cookies: Cookie[] = await decryptData(text, password, (current, total) => {
+      const cookies = await decryptData(text, password, (current, total) => {
         setProgress({ current, total });
         setMessage(`Decrypting file... (${Math.round((current / total) * 100)}%)`);
       });
 
-      setAllCookies(cookies);
-      const groups = groupCookiesByDomain(cookies);
-      setDomainGroups(groups);
+      ds.loadCookies(cookies);
 
       setStatus('idle');
       setMessage('');
@@ -81,8 +66,8 @@ export function RestoreFlow() {
   };
 
   const handleRestoreConfirm = async () => {
-    const selectedDomains = new Set(domainGroups.filter((g) => g.selected).map((g) => g.domain));
-    const cookiesToRestore = filterCookiesByDomains(allCookies, selectedDomains);
+    const selectedDomains = new Set(ds.domainGroups.filter((g) => g.selected).map((g) => g.domain));
+    const cookiesToRestore = filterCookiesByDomains(ds.allCookies, selectedDomains);
 
     if (cookiesToRestore.length === 0) {
       setStatus('error');
@@ -115,8 +100,7 @@ export function RestoreFlow() {
 
       setPassword('');
       setStep('file');
-      setDomainGroups([]);
-      setAllCookies([]);
+      ds.reset();
       setFile(null);
     } catch (err: unknown) {
       console.error(err);
@@ -170,7 +154,14 @@ export function RestoreFlow() {
           </Button>
 
           {status === 'loading' && progress.total > 0 && (
-            <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+            <div
+              className="w-full bg-secondary h-2 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round((progress.current / progress.total) * 100)}
+              aria-label="Decryption progress"
+            >
               <div
                 className="bg-primary h-full transition-all duration-300"
                 style={{ width: `${(progress.current / progress.total) * 100}%` }}
@@ -183,35 +174,42 @@ export function RestoreFlow() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setStep('file')}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors touch-target"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               Back
             </button>
           </div>
 
           <DomainPicker
-            groups={domainGroups}
-            onToggle={toggleDomain}
-            onSelectAll={selectAll}
-            onDeselectAll={deselectAll}
-            searchQuery={searchQuery}
-            onSearch={setSearchQuery}
-            selectedCount={selectedCount}
-            totalCookiesSelected={totalCookiesSelected}
+            groups={ds.domainGroups}
+            onToggle={ds.toggleDomain}
+            onSelectAll={ds.selectAll}
+            onDeselectAll={ds.deselectAll}
+            searchQuery={ds.searchQuery}
+            onSearch={ds.setSearchQuery}
+            selectedCount={ds.selectedCount}
+            totalCookiesSelected={ds.totalCookiesSelected}
           />
 
           <Button
             type="button"
             className="w-full"
             onClick={handleRestoreConfirm}
-            disabled={status === 'loading' || selectedCount === 0}
+            disabled={status === 'loading' || ds.selectedCount === 0}
           >
-            {status === 'loading' ? 'Restoring...' : `Restore ${totalCookiesSelected} Cookies`}
+            {status === 'loading' ? 'Restoring...' : `Restore ${ds.totalCookiesSelected} Cookies`}
           </Button>
 
           {status === 'loading' && progress.total > 0 && (
-            <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+            <div
+              className="w-full bg-secondary h-2 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round((progress.current / progress.total) * 100)}
+              aria-label="Restore progress"
+            >
               <div
                 className="bg-primary h-full transition-all duration-300"
                 style={{ width: `${(progress.current / progress.total) * 100}%` }}
@@ -222,39 +220,40 @@ export function RestoreFlow() {
       )}
 
       {/* Status Message */}
-      {message && (
-        <div
-          className={`p-4 rounded-xl text-sm font-medium ${status === 'error'
-              ? 'bg-destructive/10 text-destructive border border-destructive/20'
-              : status === 'success'
-                ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-                : 'bg-secondary text-secondary-foreground'
+      <div aria-live="polite" aria-atomic="true">
+        {message && (
+          <div
+            className={`p-4 rounded-xl text-sm font-medium ${
+              status === 'error'
+                ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                : status === 'success'
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
+                  : 'bg-secondary text-secondary-foreground'
             }`}
-        >
-          {message}
-        </div>
-      )}
+          >
+            {message}
+          </div>
+        )}
+      </div>
 
       {/* Collapsible Warnings Panel */}
       {restoreDetails.length > 0 && warningCount > 0 && (
         <div className="border border-border rounded-xl overflow-hidden bg-card">
           <button
             onClick={() => setShowWarnings(!showWarnings)}
-            className="w-full flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
+            aria-expanded={showWarnings}
+            aria-controls="warnings-panel"
+            className="w-full flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium touch-target"
           >
             <span className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-500" />
               {warningCount} cookie{warningCount > 1 ? 's' : ''} need attention
             </span>
-            {showWarnings ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
+            {showWarnings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
           {showWarnings && (
-            <div className="max-h-48 overflow-y-auto divide-y divide-border">
+            <div id="warnings-panel" className="max-h-48 overflow-y-auto divide-y divide-border">
               {restoreDetails
                 .filter((d) => d.status !== 'success')
                 .map((detail, idx) => (

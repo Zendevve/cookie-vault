@@ -5,13 +5,10 @@ import { Input } from './ui/Input';
 import { Label } from './ui/Label';
 import { PasswordStrengthMeter } from './ui/PasswordStrengthMeter';
 import { DomainPicker } from './DomainPicker';
-import { encryptData, type Cookie } from '../utils/crypto';
-import {
-  getAllCookies,
-  groupCookiesByDomain,
-  filterCookiesByDomains,
-  type DomainGroup,
-} from '../utils/cookies';
+import { encryptData } from '../utils/crypto';
+import { getAllCookies, filterCookiesByDomains } from '../utils/cookies';
+import { downloadBlob } from '../utils/downloadBlob';
+import { useDomainSelection } from '../hooks/useDomainSelection';
 
 type BackupStep = 'password' | 'preview';
 
@@ -23,28 +20,7 @@ export function BackupFlow() {
   const [message, setMessage] = useState('');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  const [allCookies, setAllCookies] = useState<Cookie[]>([]);
-  const [domainGroups, setDomainGroups] = useState<DomainGroup[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const selectedCount = domainGroups.filter((g) => g.selected).length;
-  const totalCookiesSelected = domainGroups
-    .filter((g) => g.selected)
-    .reduce((sum, g) => sum + g.cookies.length, 0);
-
-  const toggleDomain = (domain: string) => {
-    setDomainGroups((prev) =>
-      prev.map((g) => (g.domain === domain ? { ...g, selected: !g.selected } : g))
-    );
-  };
-
-  const selectAll = () => {
-    setDomainGroups((prev) => prev.map((g) => ({ ...g, selected: true })));
-  };
-
-  const deselectAll = () => {
-    setDomainGroups((prev) => prev.map((g) => ({ ...g, selected: false })));
-  };
+  const ds = useDomainSelection();
 
   const handleBackupPreview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,9 +41,7 @@ export function BackupFlow() {
       setMessage('Fetching cookies...');
 
       const cookies = await getAllCookies();
-      setAllCookies(cookies);
-      const groups = groupCookiesByDomain(cookies);
-      setDomainGroups(groups);
+      ds.loadCookies(cookies);
 
       setStatus('idle');
       setMessage('');
@@ -79,8 +53,8 @@ export function BackupFlow() {
   };
 
   const handleBackupConfirm = async () => {
-    const selectedDomains = new Set(domainGroups.filter((g) => g.selected).map((g) => g.domain));
-    const cookiesToBackup = filterCookiesByDomains(allCookies, selectedDomains);
+    const selectedDomains = new Set(ds.domainGroups.filter((g) => g.selected).map((g) => g.domain));
+    const cookiesToBackup = filterCookiesByDomains(ds.allCookies, selectedDomains);
 
     if (cookiesToBackup.length === 0) {
       setStatus('error');
@@ -94,37 +68,24 @@ export function BackupFlow() {
 
       const blob = await encryptData(cookiesToBackup, password, (current, total) => {
         setProgress({ current, total });
-        setMessage(`Encrypting ${cookiesToBackup.length} cookies... (${Math.round((current / total) * 100)}%)`);
+        setMessage(
+          `Encrypting ${cookiesToBackup.length} cookies... (${Math.round((current / total) * 100)}%)`
+        );
       });
 
-      // Download
-      const url = URL.createObjectURL(blob);
       const d = new Date();
       const timestamp = d.toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const filename = `cookies-${timestamp}.cv`;
-
-      if (chrome.downloads) {
-        await chrome.downloads.download({
-          url: url,
-          filename: filename,
-          saveAs: true,
-        });
-      } else {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-      }
+      await downloadBlob(blob, filename);
 
       setStatus('success');
       setMessage(
-        `Successfully backed up ${cookiesToBackup.length} cookies from ${selectedCount} domains!`
+        `Successfully backed up ${cookiesToBackup.length} cookies from ${ds.selectedCount} domains!`
       );
       setPassword('');
       setConfirmPassword('');
       setStep('password');
-      setDomainGroups([]);
-      setAllCookies([]);
+      ds.reset();
     } catch (err: unknown) {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'Backup failed');
@@ -178,35 +139,42 @@ export function BackupFlow() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setStep('password')}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors touch-target"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               Back
             </button>
           </div>
 
           <DomainPicker
-            groups={domainGroups}
-            onToggle={toggleDomain}
-            onSelectAll={selectAll}
-            onDeselectAll={deselectAll}
-            searchQuery={searchQuery}
-            onSearch={setSearchQuery}
-            selectedCount={selectedCount}
-            totalCookiesSelected={totalCookiesSelected}
+            groups={ds.domainGroups}
+            onToggle={ds.toggleDomain}
+            onSelectAll={ds.selectAll}
+            onDeselectAll={ds.deselectAll}
+            searchQuery={ds.searchQuery}
+            onSearch={ds.setSearchQuery}
+            selectedCount={ds.selectedCount}
+            totalCookiesSelected={ds.totalCookiesSelected}
           />
 
           <Button
             type="button"
             className="w-full"
             onClick={handleBackupConfirm}
-            disabled={status === 'loading' || selectedCount === 0}
+            disabled={status === 'loading' || ds.selectedCount === 0}
           >
-            {status === 'loading' ? 'Encrypting...' : `Backup ${totalCookiesSelected} Cookies`}
+            {status === 'loading' ? 'Encrypting...' : `Backup ${ds.totalCookiesSelected} Cookies`}
           </Button>
 
           {status === 'loading' && progress.total > 0 && (
-            <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+            <div
+              className="w-full bg-secondary h-2 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round((progress.current / progress.total) * 100)}
+              aria-label="Encryption progress"
+            >
               <div
                 className="bg-primary h-full transition-all duration-300"
                 style={{ width: `${(progress.current / progress.total) * 100}%` }}
@@ -217,18 +185,21 @@ export function BackupFlow() {
       )}
 
       {/* Status Message */}
-      {message && (
-        <div
-          className={`p-4 rounded-xl text-sm font-medium ${status === 'error'
-            ? 'bg-destructive/10 text-destructive border border-destructive/20'
-            : status === 'success'
-              ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-              : 'bg-secondary text-secondary-foreground'
+      <div aria-live="polite" aria-atomic="true">
+        {message && (
+          <div
+            className={`p-4 rounded-xl text-sm font-medium ${
+              status === 'error'
+                ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                : status === 'success'
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
+                  : 'bg-secondary text-secondary-foreground'
             }`}
-        >
-          {message}
-        </div>
-      )}
+          >
+            {message}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

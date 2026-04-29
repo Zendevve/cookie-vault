@@ -23,12 +23,12 @@ All operations occur **locally**:
 
 ## Permissions Explained
 
-| Permission   | Purpose                                                     |
-| ------------ | ----------------------------------------------------------- |
-| `cookies`    | Read/write browser cookies (core functionality)             |
-| `activeTab`  | Access current tab only when you click the extension        |
-| `downloads`  | Save backup files to your Downloads folder                  |
-| `storage`    | Save extension preferences locally                          |
+| Permission       | Purpose                                              |
+| ---------------- | ---------------------------------------------------- |
+| `cookies`        | Read/write browser cookies (core functionality)      |
+| `activeTab`      | Access current tab only when you click the extension |
+| `downloads`      | Save backup files to your Downloads folder           |
+| `clipboardWrite` | Copy export data to clipboard                        |
 
 ## What We Don't Request
 

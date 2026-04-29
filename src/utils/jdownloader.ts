@@ -1,4 +1,6 @@
 import type { Cookie } from './crypto';
+import { filterByDomain } from './filterByDomain';
+import { downloadBlob } from './downloadBlob';
 
 /**
  * JDownloader Cookie Format
@@ -67,19 +69,7 @@ export function formatJDownloader(cookies: Cookie[]): string {
  * @returns JSON string for matching cookies
  */
 export function formatJDownloaderForDomain(cookies: Cookie[], domain: string): string {
-  const normalizedTarget = domain.toLowerCase().replace(/^\./, '');
-
-  const filtered = cookies.filter((cookie) => {
-    const cookieDomain = cookie.domain.toLowerCase().replace(/^\./, '');
-
-    if (cookieDomain === normalizedTarget) return true;
-    if (normalizedTarget.endsWith(`.${cookieDomain}`)) return true;
-    if (cookieDomain.endsWith(`.${normalizedTarget}`)) return true;
-
-    return false;
-  });
-
-  return formatJDownloader(filtered);
+  return formatJDownloader(filterByDomain(cookies, domain));
 }
 
 /**
@@ -105,20 +95,5 @@ export async function downloadJDownloader(
 ): Promise<void> {
   const content = formatJDownloader(cookies);
   const blob = new Blob([content], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-
-  if (typeof chrome !== 'undefined' && chrome.downloads) {
-    await chrome.downloads.download({
-      url: url,
-      filename: filename,
-      saveAs: true,
-    });
-  } else {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-  }
-
-  URL.revokeObjectURL(url);
+  await downloadBlob(blob, filename);
 }

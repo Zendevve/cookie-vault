@@ -36,10 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="text-muted-foreground text-sm max-w-[250px]">
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="gap-2"
-          >
+          <Button onClick={() => window.location.reload()} className="gap-2">
             <RefreshCw className="w-4 h-4" />
             Reload Extension
           </Button>

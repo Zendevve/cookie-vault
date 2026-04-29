@@ -10,13 +10,13 @@ This document distills Apple's Human Interface Guidelines (HIG) into actionable 
 
 > "An accessible interface is intuitive, perceivable, and adaptable."
 
-| Principle | Implementation |
-|-----------|----------------|
-| **Text Sizing** | Support Dynamic Type; minimum 11pt on iOS, 17pt default |
-| **Color Contrast** | Minimum 4.5:1 for text, 3:1 for large/bold text |
-| **Color Independence** | Never rely on color alone; use shapes/icons + color |
-| **Touch Targets** | Minimum 44×44pt on iOS, 28×28pt minimum |
-| **Spacing** | 12pt padding around bezeled elements, 24pt around non-bezeled |
+| Principle              | Implementation                                                |
+| ---------------------- | ------------------------------------------------------------- |
+| **Text Sizing**        | Support Dynamic Type; minimum 11pt on iOS, 17pt default       |
+| **Color Contrast**     | Minimum 4.5:1 for text, 3:1 for large/bold text               |
+| **Color Independence** | Never rely on color alone; use shapes/icons + color           |
+| **Touch Targets**      | Minimum 44×44pt on iOS, 28×28pt minimum                       |
+| **Spacing**            | 12pt padding around bezeled elements, 24pt around non-bezeled |
 
 ### 2. Visual Hierarchy
 
@@ -44,15 +44,15 @@ This document distills Apple's Human Interface Guidelines (HIG) into actionable 
 
 Use semantic color tokens that adapt to light/dark modes automatically:
 
-| Token | Purpose |
-|-------|---------|
-| `foreground` | Primary text |
-| `muted-foreground` | Secondary/tertiary text |
-| `background` | Page/view background |
-| `card` | Elevated surface background |
-| `primary` | Interactive elements, accent |
-| `destructive` | Error states, destructive actions |
-| `border` | Separators, input borders |
+| Token              | Purpose                           |
+| ------------------ | --------------------------------- |
+| `foreground`       | Primary text                      |
+| `muted-foreground` | Secondary/tertiary text           |
+| `background`       | Page/view background              |
+| `card`             | Elevated surface background       |
+| `primary`          | Interactive elements, accent      |
+| `destructive`      | Error states, destructive actions |
+| `border`           | Separators, input borders         |
 
 ### Light & Dark Mode
 
@@ -72,12 +72,12 @@ Always provide both light and dark variants:
 
 ### Contrast Guidelines
 
-| Context | Minimum Ratio |
-|---------|---------------|
-| Body text (< 18pt) | 4.5:1 |
-| Large text (≥ 18pt) | 3:1 |
-| Bold text (any size) | 3:1 |
-| UI components | 3:1 |
+| Context              | Minimum Ratio |
+| -------------------- | ------------- |
+| Body text (< 18pt)   | 4.5:1         |
+| Large text (≥ 18pt)  | 3:1           |
+| Bold text (any size) | 3:1           |
+| UI components        | 3:1           |
 
 ### Color Independence
 
@@ -101,12 +101,12 @@ Always pair color with another visual indicator:
 
 ### Size Hierarchy
 
-| Style | iOS Default | Minimum |
-|-------|-------------|---------|
-| Title | 28pt | 22pt |
-| Headline | 17pt (bold) | 14pt |
-| Body | 17pt | 11pt |
-| Caption | 12pt | 10pt |
+| Style    | iOS Default | Minimum |
+| -------- | ----------- | ------- |
+| Title    | 28pt        | 22pt    |
+| Headline | 17pt (bold) | 14pt    |
+| Body     | 17pt        | 11pt    |
+| Caption  | 12pt        | 10pt    |
 
 ### Recommendations
 
@@ -127,10 +127,10 @@ Always pair color with another visual indicator:
 
 ### Touch Targets
 
-| Platform | Default | Minimum |
-|----------|---------|---------|
+| Platform   | Default | Minimum |
+| ---------- | ------- | ------- |
 | iOS/iPadOS | 44×44pt | 28×28pt |
-| macOS | 28×28pt | 20×20pt |
+| macOS      | 28×28pt | 20×20pt |
 
 ### Spacing
 
@@ -149,9 +149,15 @@ Always pair color with another visual indicator:
 min-height: 44px;
 
 /* Visual hierarchy */
-.primary { background: var(--primary); } /* Main action */
-.secondary { background: var(--secondary); } /* Alternative */
-.destructive { background: var(--destructive); } /* Dangerous */
+.primary {
+  background: var(--primary);
+} /* Main action */
+.secondary {
+  background: var(--secondary);
+} /* Alternative */
+.destructive {
+  background: var(--destructive);
+} /* Dangerous */
 ```
 
 ### Form Inputs
@@ -250,30 +256,32 @@ min-height: 44px;
 
 ### ✅ Compliant
 
-| Area | Status | Notes |
-|------|--------|-------|
-| Color System | ✅ | Light/dark modes with semantic tokens |
-| Not Pure Black | ✅ | Using `hsl(222 47% 6%)` in dark mode |
-| Button Sizing | ✅ | Full-width buttons meet touch targets |
-| Icon + Color States | ✅ | Status uses CheckCircle/XCircle + color |
-| Focus States | ✅ | Ring utility applied to inputs |
+| Area                | Status | Notes                                   |
+| ------------------- | ------ | --------------------------------------- |
+| Color System        | ✅     | Light/dark modes with semantic tokens   |
+| Not Pure Black      | ✅     | Using `hsl(222 47% 6%)` in dark mode    |
+| Button Sizing       | ✅     | Full-width buttons meet touch targets   |
+| Icon + Color States | ✅     | Status uses CheckCircle/XCircle + color |
+| Focus States        | ✅     | Ring utility applied to inputs          |
 
 ### ⚠️ Needs Improvement
 
-| Area | Issue | Recommendation |
-|------|-------|----------------|
-| Touch Targets | Some icon buttons may be undersized | Ensure 44×44pt minimum for all clickable elements |
-| Reduced Motion | No explicit support | Add `prefers-reduced-motion` media query |
-| Dynamic Type | Not applicable (extension popup) | Consider relative units for accessibility |
-| Loading States | Text-only feedback | Add skeleton loaders or spinners |
-| Error Contrast | Red on dark may be insufficient | Verify 4.5:1 contrast in dark mode |
+| Area           | Issue                               | Recommendation                                    |
+| -------------- | ----------------------------------- | ------------------------------------------------- |
+| Touch Targets  | Some icon buttons may be undersized | Ensure 44×44pt minimum for all clickable elements |
+| Reduced Motion | No explicit support                 | Add `prefers-reduced-motion` media query          |
+| Dynamic Type   | Not applicable (extension popup)    | Consider relative units for accessibility         |
+| Loading States | Text-only feedback                  | Add skeleton loaders or spinners                  |
+| Error Contrast | Red on dark may be insufficient     | Verify 4.5:1 contrast in dark mode                |
 
 ### Recommended CSS Additions
 
 ```css
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -312,4 +320,4 @@ min-height: 44px;
 
 ---
 
-*Reference: [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)*
+_Reference: [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)_

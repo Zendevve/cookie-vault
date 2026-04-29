@@ -3,11 +3,7 @@
   "name": "Cookie Vault",
   "version": "1.1.0",
   "description": "Secure cookie backup, restore, and export for yt-dlp, wget, curl, and JDownloader.",
-  "permissions": [
-    "cookies",
-    "downloads",
-    "activeTab"
-  ],
+  "permissions": ["cookies", "downloads", "activeTab", "clipboardWrite"],
   "host_permissions": [],
   "offline_enabled": true,
   "action": {

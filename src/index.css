@@ -81,6 +81,7 @@
     font-weight: 500;
     border-radius: 0.5rem;
     transition: all 0.2s ease-out;
+    min-height: 44px;
   }
 
   .tab-button-inactive {
@@ -124,7 +125,6 @@
 
 /* Reduced motion support (Apple HIG: Accessibility) */
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {

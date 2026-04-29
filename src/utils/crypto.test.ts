@@ -46,7 +46,9 @@ describe('Crypto Utils', () => {
       // Tamper with the checksum
       json.checksum = 'deadbeefdeadbeef'; // Invalid checksum
 
-      await expect(decryptData(JSON.stringify(json), password)).rejects.toThrow('checksum mismatch');
+      await expect(decryptData(JSON.stringify(json), password)).rejects.toThrow(
+        'checksum mismatch'
+      );
     });
   });
 

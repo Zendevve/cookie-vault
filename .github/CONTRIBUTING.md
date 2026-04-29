@@ -11,6 +11,7 @@ This project and everyone participating in it is governed by the [Cookie Vault C
 We use GitHub issues to track public bugs. Report a bug by opening a new issue; it's that easy!
 
 **Great Bug Reports** tend to have:
+
 - A quick summary and/or background
 - Steps to reproduce
 - What you expected would happen
