@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Shield, Download, Upload, Share2 } from 'lucide-react';
+import { Shield, Download, Upload, Share2, Settings } from 'lucide-react';
 import { BackupFlow } from './components/BackupFlow';
 import { RestoreFlow } from './components/RestoreFlow';
 import { ExportTab } from './components/ExportTab';
+import { SettingsTab } from './components/SettingsTab';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-type Tab = 'backup' | 'restore' | 'export';
+type Tab = 'backup' | 'restore' | 'export' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('backup');
-  // Local state for ExportTab status message, since it doesn't have internal complex state styling
   const [exportStatus, setExportStatus] = useState<{
     status: 'idle' | 'loading' | 'success' | 'error';
     message: string;
@@ -92,6 +92,22 @@ function App() {
             <Share2 className="w-4 h-4" aria-hidden="true" />
             Export
           </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'settings'}
+            aria-controls="settings-panel"
+            id="settings-tab"
+            onClick={() => {
+              setActiveTab('settings');
+              resetState();
+            }}
+            className={`tab-button ${
+              activeTab === 'settings' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
+          >
+            <Settings className="w-4 h-4" aria-hidden="true" />
+            Settings
+          </button>
         </div>
 
         {/* Content */}
@@ -140,32 +156,15 @@ function App() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="min-h-[300px]">
-          {activeTab === 'backup' && <BackupFlow />}
-
-          {activeTab === 'restore' && <RestoreFlow />}
-
-          {activeTab === 'export' && (
-            <div className="space-y-4">
-              <ExportTab status={exportStatus.status} onStatusChange={handleExportStatusChange} />
-              {exportStatus.message && (
-                <div
-                  className={`p-4 rounded-xl text-sm font-medium ${
-                    exportStatus.status === 'error'
-                      ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                      : exportStatus.status === 'success'
-                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-                        : 'bg-secondary text-secondary-foreground'
-                  }`}
-                >
-                  {exportStatus.message}
-                </div>
-              )}
-            </div>
-          )}
+          <div
+            role="tabpanel"
+            id="settings-panel"
+            aria-labelledby="settings-tab"
+            hidden={activeTab !== 'settings'}
+          >
+            {activeTab === 'settings' && <SettingsTab />}
+          </div>
         </div>
       </div>
     </ErrorBoundary>
