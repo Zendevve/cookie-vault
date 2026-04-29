@@ -18,7 +18,7 @@
 - [x] Local-first storage.
 - [x] Password protection.
 
-### v1.1.1 - Quality & Hygiene Patch (Current) ✅
+### v1.1.1 - Quality & Hygiene Patch ✅
 
 - [x] **Version Alignment**: package.json synced with manifest.json.
 - [x] **Memory Leak Fix**: Object URLs properly revoked after downloads.
@@ -36,13 +36,15 @@
 - [x] **Design System Overhaul**: "Liquid Glass" aesthetics and Apple HIG compliance.
 - [x] **PRG Gold Tier Compliance**: Full documentation, brand assets, and repo standardization.
 
-### v1.2.0 - Cross-Browser Expansion (Next) 📅
+### v1.2.0 - Cross-Browser Expansion (Current) ✅
 
-- [ ] **Firefox Support**: Adapt manifest for Gecko engine.
-- [ ] **Safari Support**: Investigate Xcode conversion requirements.
-- [ ] **Cross-Browser Sync**: Manual file transfer validation between engines.
+- [x] **Firefox Support**: Adapted manifest for Gecko engine (`manifest-firefox.json` with `browser_specific_settings.gecko`).
+- [x] **Build Script**: Added `npm run build:firefox` to produce `dist-firefox/`.
+- [x] **Polyfill Standardization**: `downloadBlob` now uses `browser.downloads` via `webextension-polyfill` instead of `chrome.downloads` directly.
+- [x] **Cross-Browser Sync**: Cookie Vault backups are engine-agnostic (same `.cv` format works in both Chromium and Firefox).
+- [ ] ~~Safari Support~~: Skipped per product decision.
 
-### v1.3.0 - Cloud & Convenience 🔮
+### v1.3.0 - Cloud & Convenience (Next) 🔮
 
 - [ ] **Optional Cloud Sync**: Encrypted E2E backup to Google Drive/Dropbox.
 - [ ] **Auto-Backup**: Scheduled local backups.

@@ -1,7 +1,7 @@
 # STATE.md — Cookie Vault
 
-**Current Milestone:** v1.1.1 Quality & Hygiene Patch (Completed)  
-**Next Milestone:** v1.2.0 Cross-Browser Expansion  
+**Current Milestone:** v1.2.0 Cross-Browser Expansion (Completed)  
+**Next Milestone:** v1.3.0 Cloud & Convenience  
 **Branch:** `main`
 
 ---
@@ -56,9 +56,24 @@
 
 ---
 
+## Completed (v1.2.0 — Cross-Browser Expansion)
+
+- [x] Created `manifest-firefox.json` with Gecko settings (`browser_specific_settings.gecko.id`, `strict_min_version: 109.0`)
+- [x] Added `scripts/build-firefox.mjs` to produce `dist-firefox/`
+- [x] Added `npm run build:firefox` script to `package.json`
+- [x] Replaced `chrome.downloads` with `browser.downloads` via `webextension-polyfill` in `downloadBlob.ts`
+- [x] Updated global test setup to mock `webextension-polyfill` for all tests
+- [x] Updated README with Firefox build and load instructions
+- [x] Safari support skipped per user directive
+- [x] All 76 tests pass
+- [x] Both Chrome and Firefox builds succeed
+- [x] Format applied
+
+---
+
 ## What's Next
 
-**v1.2.0** — Firefox / cross-browser support (Gecko manifest, polyfill standardization, Safari investigation).
+**v1.3.0** — Cloud & Convenience (optional encrypted cloud sync, auto-backup, cookie-level selective restore).
 
 ---
 

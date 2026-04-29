@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:firefox": "npm run build && node scripts/build-firefox.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "preview": "vite preview",

@@ -55,16 +55,18 @@
 
 - Extract a `useDomainSelection` hook to share domain group state logic between `BackupFlow` and `RestoreFlow`.
 
-## 2. Cross-Browser Expansion (v1.2.0) — Future Phase
+## 2. Cross-Browser Expansion (v1.2.0) — Completed
 
 ### RQ-2.1 Firefox Support
 
-- Adapt manifest for Gecko engine (Manifest V2/V3 adapter).
-- Standardize all extension API calls on `webextension-polyfill`.
+- [x] Adapt manifest for Gecko engine (`manifest-firefox.json` with `browser_specific_settings.gecko`).
+- [x] Standardize all extension API calls on `webextension-polyfill` (`downloadBlob` uses `browser.downloads`).
+- [x] Add `npm run build:firefox` build script.
+- [x] Update README with Firefox loading instructions.
 
 ### RQ-2.2 Safari Support
 
-- Investigate Xcode conversion requirements.
+- Skipped per user directive.
 
 ## 3. Cloud & Convenience (v1.3.0) — Future Phase
 
