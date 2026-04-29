@@ -5,9 +5,16 @@ interface CheckboxProps {
   onChange: () => void;
   className?: string;
   id?: string;
+  'aria-label'?: string;
 }
 
-export function Checkbox({ checked, onChange, className = '', id }: CheckboxProps) {
+export function Checkbox({
+  checked,
+  onChange,
+  className = '',
+  id,
+  'aria-label': ariaLabel,
+}: CheckboxProps) {
   return (
     <label
       htmlFor={id}
@@ -19,6 +26,7 @@ export function Checkbox({ checked, onChange, className = '', id }: CheckboxProp
         checked={checked}
         onChange={onChange}
         className="sr-only peer"
+        aria-label={ariaLabel}
       />
       <span
         className="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 flex-shrink-0 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"

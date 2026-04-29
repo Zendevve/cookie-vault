@@ -68,16 +68,20 @@
 
 - Skipped per user directive.
 
-## 3. Cloud & Convenience (v1.3.0) — Future Phase
+## 3. Cloud & Convenience (v1.3.0) — In Progress
 
-### RQ-3.1 Optional Encrypted Cloud Sync
+### RQ-3.1 Cookie-Level Selective Restore
 
-- E2E encrypted backup to Google Drive / Dropbox.
+- [x] Expandable domain rows in DomainPicker to show individual cookies.
+- [x] Checkbox per cookie to toggle selection independently of domain.
+- [x] Per-domain selected/total counter.
+- [x] Updated useDomainSelection hook to track CookieSelection and DomainSelection.
+- [x] Updated BackupFlow and RestoreFlow to use getSelectedCookies().
 
-### RQ-3.2 Auto-Backup
+### RQ-3.2 Optional Encrypted Cloud Sync
 
-- Scheduled local backups.
+- E2E encrypted backup to Google Drive / Dropbox. (Future)
 
-### RQ-3.3 Cookie-Level Selective Restore
+### RQ-3.3 Auto-Backup
 
-- Allow selecting individual cookies, not just domains.
+- Scheduled local backups. (Future)

@@ -6,7 +6,7 @@ import { Label } from './ui/Label';
 import { PasswordStrengthMeter } from './ui/PasswordStrengthMeter';
 import { DomainPicker } from './DomainPicker';
 import { encryptData } from '../utils/crypto';
-import { getAllCookies, filterCookiesByDomains } from '../utils/cookies';
+import { getAllCookies } from '../utils/cookies';
 import { downloadBlob } from '../utils/downloadBlob';
 import { useDomainSelection } from '../hooks/useDomainSelection';
 
@@ -53,8 +53,7 @@ export function BackupFlow() {
   };
 
   const handleBackupConfirm = async () => {
-    const selectedDomains = new Set(ds.domainGroups.filter((g) => g.selected).map((g) => g.domain));
-    const cookiesToBackup = filterCookiesByDomains(ds.allCookies, selectedDomains);
+    const cookiesToBackup = ds.getSelectedCookies();
 
     if (cookiesToBackup.length === 0) {
       setStatus('error');
@@ -147,14 +146,18 @@ export function BackupFlow() {
           </div>
 
           <DomainPicker
-            groups={ds.domainGroups}
-            onToggle={ds.toggleDomain}
+            groups={ds.domainSelections}
+            onToggleDomain={ds.toggleDomain}
+            onToggleCookie={ds.toggleCookie}
+            onToggleExpand={ds.toggleExpand}
             onSelectAll={ds.selectAll}
             onDeselectAll={ds.deselectAll}
             searchQuery={ds.searchQuery}
             onSearch={ds.setSearchQuery}
             selectedCount={ds.selectedCount}
             totalCookiesSelected={ds.totalCookiesSelected}
+            totalDomains={ds.totalDomains}
+            totalCookies={ds.totalCookies}
           />
 
           <Button
