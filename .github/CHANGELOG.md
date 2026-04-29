@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-04-29
+
+### Added
+
+- **Cloud Sync**: Optional encrypted backup upload to Google Drive and Dropbox via OAuth2 PKCE. Files are already encrypted by Cookie Vault before upload — the cloud provider never sees plaintext.
+- **Auto-Backup**: Scheduled background backups using `browser.alarms`. Supports daily or weekly frequency with optional cloud upload. Password is stored locally in `browser.storage.local` for unattended operation (with user consent and warning).
+- **Settings Tab**: New tab for configuring cloud providers, auto-backup schedules, and clearing local data.
+- **Background Service Worker**: Added MV3 service worker (`src/background.ts`) to handle scheduled alarms.
+
+### Changed
+
+- **Manifest Permissions**: Added `alarms`, `storage`, `identity`, and cloud API `host_permissions` for Google Drive and Dropbox.
+- **App.tsx**: Fixed duplicate content rendering bug and added Settings tab with full ARIA support.
+
 ## [1.3.0] - 2026-04-29
 
 ### Added

@@ -9,9 +9,25 @@
   "name": "Cookie Vault",
   "version": "1.1.0",
   "description": "Secure cookie backup, restore, and export for yt-dlp, wget, curl, and JDownloader.",
-  "permissions": ["cookies", "downloads", "activeTab", "clipboardWrite"],
-  "host_permissions": [],
+  "permissions": [
+    "cookies",
+    "downloads",
+    "activeTab",
+    "clipboardWrite",
+    "alarms",
+    "storage",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://www.googleapis.com/*",
+    "https://api.dropboxapi.com/*",
+    "https://content.dropboxapi.com/*"
+  ],
   "offline_enabled": true,
+  "background": {
+    "scripts": ["src/background.ts"],
+    "type": "module"
+  },
   "action": {
     "default_popup": "index.html",
     "default_title": "Cookie Vault"

@@ -44,11 +44,16 @@
 - [x] **Cross-Browser Sync**: Cookie Vault backups are engine-agnostic (same `.cv` format works in both Chromium and Firefox).
 - [ ] ~~Safari Support~~: Skipped per product decision.
 
-### v1.3.0 - Cloud & Convenience (Current) ✅
+### v1.3.0 - Cookie-Level Selective Restore ✅
 
 - [x] **Cookie-Level Selective Restore**: Users can expand domains and select individual cookies by name/path.
-- [ ] **Optional Cloud Sync**: Encrypted E2E backup to Google Drive/Dropbox.
-- [ ] **Auto-Backup**: Scheduled local backups.
+
+### v1.3.1 - Cloud Sync & Auto-Backup (Current) ✅
+
+- [x] **Cloud Sync**: OAuth2 PKCE integration with Google Drive and Dropbox for encrypted backup upload/download.
+- [x] **Auto-Backup**: Scheduled background backups via `browser.alarms` with optional cloud upload.
+- [x] **Settings Tab**: Cloud provider configuration, auto-backup scheduling, and data management UI.
+- [x] **Background Service Worker**: MV3 service worker for alarm handling.
 
 ---
 

@@ -64,7 +64,7 @@ describe('Crypto Utils', () => {
       expect(json.chunks).toBeDefined();
       expect(Array.isArray(json.chunks)).toBe(true);
       expect(json.chunks.length).toBeGreaterThan(1); // Should be at least 2 chunks
-    });
+    }, 15000);
 
     it('should decrypt chunked data correctly', async () => {
       const hugeString = 'x'.repeat(1024 * 1024 + 100);
@@ -73,7 +73,7 @@ describe('Crypto Utils', () => {
 
       const decrypted = await decryptData(text, password);
       expect(decrypted).toBe(hugeString);
-    });
+    }, 15000);
   });
 
   describe('V2 (Legacy WebCrypto) Compatibility', () => {

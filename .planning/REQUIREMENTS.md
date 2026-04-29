@@ -68,7 +68,7 @@
 
 - Skipped per user directive.
 
-## 3. Cloud & Convenience (v1.3.0) — In Progress
+## 3. Cloud & Convenience (v1.3.0–v1.3.1) — Completed
 
 ### RQ-3.1 Cookie-Level Selective Restore
 
@@ -80,8 +80,16 @@
 
 ### RQ-3.2 Optional Encrypted Cloud Sync
 
-- E2E encrypted backup to Google Drive / Dropbox. (Future)
+- [x] OAuth2 PKCE flow for Google Drive and Dropbox authorization.
+- [x] Google Drive API integration: upload, download, list, delete encrypted .cv files.
+- [x] Dropbox API integration: upload, download, list, delete encrypted .cv files.
+- [x] SettingsTab UI for connecting/disconnecting cloud providers.
+- [x] Token storage in `browser.storage.local`.
 
 ### RQ-3.3 Auto-Backup
 
-- Scheduled local backups. (Future)
+- [x] Background service worker (`src/background.ts`) for alarm handling.
+- [x] `browser.alarms` integration for daily and weekly scheduling.
+- [x] Auto-Backup settings UI with password, frequency, and cloud upload toggle.
+- [x] Unattended backup encryption using stored password (with security warning).
+- [x] Optional automatic cloud upload on each scheduled backup.

@@ -1,8 +1,8 @@
 # STATE.md — Cookie Vault
 
-**Current Milestone:** v1.3.0 Cloud & Convenience (Cookie-Level Selective Restore Completed)  
-**Next Milestone:** v1.3.1 Cloud Sync & Auto-Backup (Future)  
-**Branch:** `main`  
+**Current Milestone:** v1.3.1 Cloud Sync & Auto-Backup (Completed)  
+**Next Milestone:** v1.4.0 (Future — TBD by user)  
+**Branch:** `main`
 
 ---
 
@@ -88,9 +88,26 @@
 
 ---
 
+## Completed (v1.3.1 — Cloud Sync & Auto-Backup)
+
+- [x] Added background service worker (`src/background.ts`) with `browser.alarms` support
+- [x] Created `src/utils/storage.ts` for settings persistence in `browser.storage.local`
+- [x] Created OAuth2 PKCE module (`src/utils/cloud-sync/oauth.ts`) for Google Drive and Dropbox
+- [x] Created Google Drive API client (`src/utils/cloud-sync/google-drive.ts`) — upload, download, list, delete
+- [x] Created Dropbox API client (`src/utils/cloud-sync/dropbox.ts`) — upload, download, list, delete
+- [x] Created SettingsTab component with cloud sync configuration and auto-backup settings
+- [x] Fixed App.tsx duplicate content rendering bug
+- [x] Added Settings tab to main navigation with full ARIA support
+- [x] Updated manifests with `alarms`, `storage`, `identity`, and cloud API `host_permissions`
+- [x] All 79 tests pass
+- [x] Build passes
+- [x] Format applied
+
+---
+
 ## What's Next
 
-**v1.3.1** — Optional encrypted cloud sync (Google Drive / Dropbox) and scheduled auto-backup.
+**v1.4.0** — Future milestone TBD by user directive.
 
 ---
 
