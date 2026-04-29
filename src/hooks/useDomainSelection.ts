@@ -1,60 +1,135 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { Cookie } from '../utils/crypto';
-import type { DomainGroup } from '../utils/cookies';
 import { groupCookiesByDomain } from '../utils/cookies';
+
+export interface CookieSelection {
+  cookie: Cookie;
+  selected: boolean;
+}
+
+export interface DomainSelection {
+  domain: string;
+  cookies: CookieSelection[];
+  expanded: boolean;
+}
+
+function createDomainSelections(cookies: Cookie[]): DomainSelection[] {
+  const groups = groupCookiesByDomain(cookies);
+  return groups.map((g) => ({
+    domain: g.domain,
+    cookies: g.cookies.map((c) => ({ cookie: c, selected: true })),
+    expanded: false,
+  }));
+}
 
 export function useDomainSelection() {
   const [allCookies, setAllCookies] = useState<Cookie[]>([]);
-  const [domainGroups, setDomainGroups] = useState<DomainGroup[]>([]);
+  const [domainSelections, setDomainSelections] = useState<DomainSelection[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const selectedCount = useMemo(
-    () => domainGroups.filter((g) => g.selected).length,
-    [domainGroups]
+    () => domainSelections.filter((g) => g.cookies.some((c) => c.selected)).length,
+    [domainSelections]
   );
 
   const totalCookiesSelected = useMemo(
-    () => domainGroups.filter((g) => g.selected).reduce((sum, g) => sum + g.cookies.length, 0),
-    [domainGroups]
+    () => domainSelections.reduce((sum, g) => sum + g.cookies.filter((c) => c.selected).length, 0),
+    [domainSelections]
+  );
+
+  const totalDomains = domainSelections.length;
+  const totalCookies = useMemo(
+    () => domainSelections.reduce((sum, g) => sum + g.cookies.length, 0),
+    [domainSelections]
   );
 
   const toggleDomain = useCallback((domain: string) => {
-    setDomainGroups((prev) =>
-      prev.map((g) => (g.domain === domain ? { ...g, selected: !g.selected } : g))
+    setDomainSelections((prev) =>
+      prev.map((g) => {
+        if (g.domain !== domain) return g;
+        const allSelected = g.cookies.every((c) => c.selected);
+        return {
+          ...g,
+          cookies: g.cookies.map((c) => ({ ...c, selected: !allSelected })),
+        };
+      })
+    );
+  }, []);
+
+  const toggleCookie = useCallback((domain: string, cookieName: string, cookiePath: string) => {
+    setDomainSelections((prev) =>
+      prev.map((g) => {
+        if (g.domain !== domain) return g;
+        return {
+          ...g,
+          cookies: g.cookies.map((c) =>
+            c.cookie.name === cookieName && c.cookie.path === cookiePath
+              ? { ...c, selected: !c.selected }
+              : c
+          ),
+        };
+      })
+    );
+  }, []);
+
+  const toggleExpand = useCallback((domain: string) => {
+    setDomainSelections((prev) =>
+      prev.map((g) => (g.domain === domain ? { ...g, expanded: !g.expanded } : g))
     );
   }, []);
 
   const selectAll = useCallback(() => {
-    setDomainGroups((prev) => prev.map((g) => ({ ...g, selected: true })));
+    setDomainSelections((prev) =>
+      prev.map((g) => ({
+        ...g,
+        cookies: g.cookies.map((c) => ({ ...c, selected: true })),
+      }))
+    );
   }, []);
 
   const deselectAll = useCallback(() => {
-    setDomainGroups((prev) => prev.map((g) => ({ ...g, selected: false })));
+    setDomainSelections((prev) =>
+      prev.map((g) => ({
+        ...g,
+        cookies: g.cookies.map((c) => ({ ...c, selected: false })),
+      }))
+    );
   }, []);
 
   const loadCookies = useCallback((cookies: Cookie[]) => {
     setAllCookies(cookies);
-    setDomainGroups(groupCookiesByDomain(cookies));
+    setDomainSelections(createDomainSelections(cookies));
     setSearchQuery('');
   }, []);
 
   const reset = useCallback(() => {
     setAllCookies([]);
-    setDomainGroups([]);
+    setDomainSelections([]);
     setSearchQuery('');
   }, []);
 
+  const getSelectedCookies = useCallback((): Cookie[] => {
+    return domainSelections.flatMap((g) =>
+      g.cookies.filter((c) => c.selected).map((c) => c.cookie)
+    );
+  }, [domainSelections]);
+
   return {
     allCookies,
-    domainGroups,
+    domainSelections,
     searchQuery,
     selectedCount,
     totalCookiesSelected,
     toggleDomain,
+    toggleCookie,
+    toggleExpand,
     selectAll,
     deselectAll,
     setSearchQuery,
     loadCookies,
     reset,
+    totalDomains,
+    totalCookies,
+    getSelectedCookies,
   };
 }

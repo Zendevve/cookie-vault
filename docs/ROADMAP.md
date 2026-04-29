@@ -36,7 +36,7 @@
 - [x] **Design System Overhaul**: "Liquid Glass" aesthetics and Apple HIG compliance.
 - [x] **PRG Gold Tier Compliance**: Full documentation, brand assets, and repo standardization.
 
-### v1.2.0 - Cross-Browser Expansion (Current) ✅
+### v1.2.0 - Cross-Browser Expansion ✅
 
 - [x] **Firefox Support**: Adapted manifest for Gecko engine (`manifest-firefox.json` with `browser_specific_settings.gecko`).
 - [x] **Build Script**: Added `npm run build:firefox` to produce `dist-firefox/`.
@@ -44,11 +44,11 @@
 - [x] **Cross-Browser Sync**: Cookie Vault backups are engine-agnostic (same `.cv` format works in both Chromium and Firefox).
 - [ ] ~~Safari Support~~: Skipped per product decision.
 
-### v1.3.0 - Cloud & Convenience (Next) 🔮
+### v1.3.0 - Cloud & Convenience (Current) ✅
 
+- [x] **Cookie-Level Selective Restore**: Users can expand domains and select individual cookies by name/path.
 - [ ] **Optional Cloud Sync**: Encrypted E2E backup to Google Drive/Dropbox.
 - [ ] **Auto-Backup**: Scheduled local backups.
-- [ ] **Selective Restore**: Allow users to restore cookies for specific domains only.
 
 ---
 

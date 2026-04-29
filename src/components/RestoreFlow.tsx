@@ -14,12 +14,7 @@ import { Input } from './ui/Input';
 import { Label } from './ui/Label';
 import { DomainPicker } from './DomainPicker';
 import { decryptData } from '../utils/crypto';
-import {
-  restoreCookies,
-  filterCookiesByDomains,
-  type RestoreResult,
-  type CookieRestoreDetail,
-} from '../utils/cookies';
+import { restoreCookies, type RestoreResult, type CookieRestoreDetail } from '../utils/cookies';
 import { useDomainSelection } from '../hooks/useDomainSelection';
 
 type RestoreStep = 'file' | 'preview';
@@ -66,8 +61,7 @@ export function RestoreFlow() {
   };
 
   const handleRestoreConfirm = async () => {
-    const selectedDomains = new Set(ds.domainGroups.filter((g) => g.selected).map((g) => g.domain));
-    const cookiesToRestore = filterCookiesByDomains(ds.allCookies, selectedDomains);
+    const cookiesToRestore = ds.getSelectedCookies();
 
     if (cookiesToRestore.length === 0) {
       setStatus('error');
@@ -182,14 +176,18 @@ export function RestoreFlow() {
           </div>
 
           <DomainPicker
-            groups={ds.domainGroups}
-            onToggle={ds.toggleDomain}
+            groups={ds.domainSelections}
+            onToggleDomain={ds.toggleDomain}
+            onToggleCookie={ds.toggleCookie}
+            onToggleExpand={ds.toggleExpand}
             onSelectAll={ds.selectAll}
             onDeselectAll={ds.deselectAll}
             searchQuery={ds.searchQuery}
             onSearch={ds.setSearchQuery}
             selectedCount={ds.selectedCount}
             totalCookiesSelected={ds.totalCookiesSelected}
+            totalDomains={ds.totalDomains}
+            totalCookies={ds.totalCookies}
           />
 
           <Button

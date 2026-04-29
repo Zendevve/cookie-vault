@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-04-29
+
+### Added
+
+- **Cookie-Level Selective Restore**: Users can now expand individual domains in the picker to select or deselect specific cookies by name and path, rather than being limited to all-or-nothing domain selection.
+- **Expandable Domain Picker**: Each domain row features a chevron to expand/collapse and reveal its individual cookies.
+- **Cookie Selection Counter**: The picker now shows `selected/total` counts per domain and globally.
+
+### Changed
+
+- **Domain Selection Hook**: `useDomainSelection` rewritten to track individual cookie selections via `CookieSelection` and `DomainSelection` types, with new actions: `toggleCookie`, `toggleExpand`, and `getSelectedCookies`.
+- **Checkbox Accessibility**: Added `aria-label` support to the `Checkbox` component for better screen-reader identification.
+
 ## [1.2.0] - 2026-04-29
 
 ### Added

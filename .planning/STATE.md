@@ -1,8 +1,8 @@
 # STATE.md — Cookie Vault
 
-**Current Milestone:** v1.2.0 Cross-Browser Expansion (Completed)  
-**Next Milestone:** v1.3.0 Cloud & Convenience  
-**Branch:** `main`
+**Current Milestone:** v1.3.0 Cloud & Convenience (Cookie-Level Selective Restore Completed)  
+**Next Milestone:** v1.3.1 Cloud Sync & Auto-Backup (Future)  
+**Branch:** `main`  
 
 ---
 
@@ -71,9 +71,26 @@
 
 ---
 
+## Completed (v1.3.0 — Cookie-Level Selective Restore)
+
+- [x] Rewrote `useDomainSelection` hook with `CookieSelection` and `DomainSelection` types
+- [x] Added `toggleCookie(domain, name, path)` for individual cookie selection
+- [x] Added `toggleExpand(domain)` for expandable domain rows
+- [x] Added `getSelectedCookies()` to return only selected cookies
+- [x] Rewrote `DomainPicker` with expandable domains and per-cookie checkboxes
+- [x] Added per-domain selected/total counter
+- [x] Updated `Checkbox` component with `aria-label` support
+- [x] Updated `BackupFlow` and `RestoreFlow` to use cookie-level selection
+- [x] Added tests: `toggleCookie`, `toggleExpand`, `getSelectedCookies`
+- [x] All 79 tests pass
+- [x] Build passes
+- [x] Format applied
+
+---
+
 ## What's Next
 
-**v1.3.0** — Cloud & Convenience (optional encrypted cloud sync, auto-backup, cookie-level selective restore).
+**v1.3.1** — Optional encrypted cloud sync (Google Drive / Dropbox) and scheduled auto-backup.
 
 ---
 
