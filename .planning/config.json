@@ -1,0 +1,7 @@
+{
+  "profile": "balanced",
+  "auto_plan": true,
+  "auto_commit": true,
+  "ask_before_delete": true,
+  "test_first": true
+}

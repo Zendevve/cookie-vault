@@ -55,12 +55,7 @@ export function DomainPicker({
 
       {/* Select All / Deselect All */}
       <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          className="flex-1 text-xs"
-          onClick={onSelectAll}
-        >
+        <Button type="button" variant="secondary" className="flex-1 text-xs" onClick={onSelectAll}>
           <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
           Select All
         </Button>
@@ -80,13 +75,15 @@ export function DomainPicker({
         {filteredDomains.map((group) => (
           <label
             key={group.domain}
-            className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
-              }`}
+            className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+              group.selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+            }`}
           >
             <Checkbox checked={group.selected} onChange={() => onToggle(group.domain)} />
             <span
-              className={`flex-1 text-sm truncate ${group.selected ? 'text-foreground' : 'text-muted-foreground'
-                }`}
+              className={`flex-1 text-sm truncate ${
+                group.selected ? 'text-foreground' : 'text-muted-foreground'
+              }`}
             >
               {group.domain}
             </span>

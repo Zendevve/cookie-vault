@@ -15,7 +15,10 @@ function App() {
     message: string;
   }>({ status: 'idle', message: '' });
 
-  const handleExportStatusChange = (status: 'idle' | 'loading' | 'success' | 'error', message: string) => {
+  const handleExportStatusChange = (
+    status: 'idle' | 'loading' | 'success' | 'error',
+    message: string
+  ) => {
     setExportStatus({ status, message });
   };
 
@@ -36,40 +39,107 @@ function App() {
         </header>
 
         {/* Tab Navigation */}
-        <div className="flex p-1.5 mb-6 bg-secondary rounded-xl">
+        <div
+          className="flex p-1.5 mb-6 bg-secondary rounded-xl"
+          role="tablist"
+          aria-label="Cookie Vault actions"
+        >
           <button
+            role="tab"
+            aria-selected={activeTab === 'backup'}
+            aria-controls="backup-panel"
+            id="backup-tab"
             onClick={() => {
               setActiveTab('backup');
               resetState();
             }}
-            className={`tab-button ${activeTab === 'backup' ? 'tab-button-active' : 'tab-button-inactive'
-              }`}
+            className={`tab-button ${
+              activeTab === 'backup' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4" aria-hidden="true" />
             Backup
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'restore'}
+            aria-controls="restore-panel"
+            id="restore-tab"
             onClick={() => {
               setActiveTab('restore');
               resetState();
             }}
-            className={`tab-button ${activeTab === 'restore' ? 'tab-button-active' : 'tab-button-inactive'
-              }`}
+            className={`tab-button ${
+              activeTab === 'restore' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-4 h-4" aria-hidden="true" />
             Restore
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'export'}
+            aria-controls="export-panel"
+            id="export-tab"
             onClick={() => {
               setActiveTab('export');
               resetState();
             }}
-            className={`tab-button ${activeTab === 'export' ? 'tab-button-active' : 'tab-button-inactive'
-              }`}
+            className={`tab-button ${
+              activeTab === 'export' ? 'tab-button-active' : 'tab-button-inactive'
+            }`}
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-4 h-4" aria-hidden="true" />
             Export
           </button>
+        </div>
+
+        {/* Content */}
+        <div className="min-h-[300px]">
+          <div
+            role="tabpanel"
+            id="backup-panel"
+            aria-labelledby="backup-tab"
+            hidden={activeTab !== 'backup'}
+          >
+            {activeTab === 'backup' && <BackupFlow />}
+          </div>
+
+          <div
+            role="tabpanel"
+            id="restore-panel"
+            aria-labelledby="restore-tab"
+            hidden={activeTab !== 'restore'}
+          >
+            {activeTab === 'restore' && <RestoreFlow />}
+          </div>
+
+          <div
+            role="tabpanel"
+            id="export-panel"
+            aria-labelledby="export-tab"
+            hidden={activeTab !== 'export'}
+          >
+            {activeTab === 'export' && (
+              <div className="space-y-4">
+                <ExportTab status={exportStatus.status} onStatusChange={handleExportStatusChange} />
+                {exportStatus.message && (
+                  <div
+                    aria-live="polite"
+                    className={`p-4 rounded-xl text-sm font-medium ${
+                      exportStatus.status === 'error'
+                        ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                        : exportStatus.status === 'success'
+                          ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
+                          : 'bg-secondary text-secondary-foreground'
+                    }`}
+                  >
+                    {exportStatus.message}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -80,18 +150,16 @@ function App() {
 
           {activeTab === 'export' && (
             <div className="space-y-4">
-              <ExportTab
-                status={exportStatus.status}
-                onStatusChange={handleExportStatusChange}
-              />
+              <ExportTab status={exportStatus.status} onStatusChange={handleExportStatusChange} />
               {exportStatus.message && (
                 <div
-                  className={`p-4 rounded-xl text-sm font-medium ${exportStatus.status === 'error'
+                  className={`p-4 rounded-xl text-sm font-medium ${
+                    exportStatus.status === 'error'
                       ? 'bg-destructive/10 text-destructive border border-destructive/20'
                       : exportStatus.status === 'success'
                         ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
                         : 'bg-secondary text-secondary-foreground'
-                    }`}
+                  }`}
                 >
                   {exportStatus.message}
                 </div>

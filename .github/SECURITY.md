@@ -41,12 +41,14 @@ Cookie Vault uses deterministic builds to ensure the Chrome Web Store binary mat
    - Click "Pack extension" or locate the `.crx` file
 
 2. **Extract the extension**
+
    ```bash
    # Rename .crx to .zip and extract
    unzip cookie-vault.zip -d extracted/
    ```
 
 3. **Clone the repository**
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/cookie-vault
    cd cookie-vault
@@ -54,6 +56,7 @@ Cookie Vault uses deterministic builds to ensure the Chrome Web Store binary mat
    ```
 
 4. **Run the deterministic build**
+
    ```bash
    npm ci
    npm run build
@@ -101,10 +104,10 @@ If you discover a security vulnerability:
 
 ## Audit History
 
-| Date       | Auditor        | Scope                  | Result |
-| ---------- | -------------- | ---------------------- | ------ |
-| 2026-01-08 | Self-audit     | Permission refactor    | Pass   |
+| Date       | Auditor    | Scope               | Result |
+| ---------- | ---------- | ------------------- | ------ |
+| 2026-01-08 | Self-audit | Permission refactor | Pass   |
 
 ---
 
-*Last updated: 2026-01-08*
+_Last updated: 2026-01-08_

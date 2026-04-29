@@ -50,17 +50,20 @@ Migrating to a new computer or switching browsers is often a painful process of 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Zendevve/cookie-vault.git
    cd cookie-vault
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Build the extension**
+
    ```bash
    npm run build
    ```
@@ -79,13 +82,14 @@ Migrating to a new computer or switching browsers is often a painful process of 
 cookie-vault/
 ├── src/
 │   ├── components/       # React UI components
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/             # Core logic (crypto, cookies)
-│   ├── assets/          # Static assets
+│   ├── lib/             # Core utilities
+│   ├── utils/           # Business logic (crypto, cookies, formats)
+│   ├── test/            # Test setup
 │   ├── App.tsx          # Main entry point
-│   └── manifest.json    # Extension manifest
+│   └── main.tsx         # React root
 ├── docs/                # Documentation & Assets
 ├── .github/             # GitHub templates & workflows
+├── manifest.json        # Extension manifest
 └── dist/                # Production build artifacts
 ```
 
@@ -95,8 +99,8 @@ cookie-vault/
 
 Cookie Vault works out of the box, but you can customize the build process:
 
-| Environment Variable | Description |
-| -------------------- | ----------- |
+| Environment Variable | Description                                     |
+| -------------------- | ----------------------------------------------- |
 | `VITE_APP_VERSION`   | Override the version number displayed in the UI |
 
 ---
@@ -108,12 +112,10 @@ We use **Vitest** for unit and integration testing.
 ```bash
 # Run all tests
 npm run test
-
-# Run with coverage report
-npm run test:coverage
 ```
 
 Our test suite covers:
+
 - ✅ Crypto round-trip (Encryption/Decryption)
 - ✅ Partitioned cookie handling (CHIPS)
 - ✅ Legacy format imports

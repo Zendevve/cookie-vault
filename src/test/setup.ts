@@ -1,3 +1,5 @@
+import '@testing-library/jest-dom';
+
 // Setup chrome mock globally for all tests
 // This file runs BEFORE any tests, so isExtension will be true
 

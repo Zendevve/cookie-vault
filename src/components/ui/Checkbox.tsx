@@ -4,22 +4,28 @@ interface CheckboxProps {
   checked: boolean;
   onChange: () => void;
   className?: string;
+  id?: string;
 }
 
-export function Checkbox({ checked, onChange, className = '' }: CheckboxProps) {
+export function Checkbox({ checked, onChange, className = '', id }: CheckboxProps) {
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onChange();
-      }}
-      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 flex-shrink-0 ${checked
-          ? 'bg-primary border-primary text-primary-foreground'
-          : 'bg-transparent border-muted-foreground/40 hover:border-primary/60'
-        } ${className}`}
+    <label
+      htmlFor={id}
+      className={`inline-flex items-center justify-center cursor-pointer touch-target ${className}`}
     >
-      {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-    </button>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="sr-only peer"
+      />
+      <span
+        className="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-150 flex-shrink-0 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
+        aria-hidden="true"
+      >
+        {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+      </span>
+    </label>
   );
 }

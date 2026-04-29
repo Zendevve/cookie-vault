@@ -207,7 +207,6 @@ async function encryptChunked(
   return new Blob([JSON.stringify(result)], { type: 'application/octet-stream' });
 }
 
-
 /**
  * Decrypts data. Supports v4 (chunked), v3/v2 (WebCrypto), and legacy SJCL (detected automatically).
  * @param fileContent The string content of the backup file
@@ -249,7 +248,6 @@ export async function decryptData(
     throw e;
   }
 }
-
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Parsed JSON structures
 async function decryptWebCrypto(
@@ -415,7 +413,6 @@ async function decryptChunked(
     throw new Error('Incorrect password or corrupted file');
   }
 }
-
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns parsed JSON
 function decryptLegacy(fileContent: string, password: string): any {

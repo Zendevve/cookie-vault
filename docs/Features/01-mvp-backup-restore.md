@@ -1,6 +1,6 @@
 # Feature: MVP - Encrypted Backup & Restore
 
-Status: In Progress
+Status: Done
 Owner: Developer
 Related ADRs: N/A
 
@@ -80,7 +80,7 @@ Reimplement the core functionality of the "Cookie Backup and Restore" extension 
 
 ## Definition of Done
 
-- [ ] Backup functionality works with encryption.
-- [ ] Restore functionality works.
-- [ ] UI is polished (Dark mode support).
-- [ ] Code is TypeScript compliant.
+- [x] Backup functionality works with encryption.
+- [x] Restore functionality works.
+- [x] UI is polished (Dark mode support).
+- [x] Code is TypeScript compliant.
