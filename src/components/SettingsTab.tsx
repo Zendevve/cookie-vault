@@ -7,6 +7,8 @@ import {
   AlertTriangle,
   KeyRound,
   HardDrive,
+  UploadCloud,
+  Loader2,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -14,9 +16,16 @@ import { Label } from './ui/Label';
 import { Checkbox } from './ui/Checkbox';
 import browser from 'webextension-polyfill';
 import { getSettings, setSettings, clearCloudToken, type VaultSettings } from '../utils/storage';
-import { authorizeGoogleDrive, authorizeDropbox } from '../utils/cloud-sync/oauth';
-import { listDriveFiles } from '../utils/cloud-sync/google-drive';
-import { listDropboxFiles } from '../utils/cloud-sync/dropbox';
+import {
+  authorizeGoogleDrive,
+  authorizeDropbox,
+  getGoogleDriveToken,
+  getDropboxToken,
+} from '../utils/cloud-sync/oauth';
+import { listDriveFiles, uploadToDrive } from '../utils/cloud-sync/google-drive';
+import { listDropboxFiles, uploadToDropbox } from '../utils/cloud-sync/dropbox';
+import { getAllCookies } from '../utils/cookies';
+import { encryptData } from '../utils/crypto';
 
 type CloudStatus = 'idle' | 'loading' | 'connected' | 'error';
 
@@ -29,22 +38,75 @@ export function SettingsTab() {
   const [backupCount, setBackupCount] = useState(0);
   const [message, setMessage] = useState('');
   const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isBackingUpToCloud, setIsBackingUpToCloud] = useState(false);
 
-  const loadSettings = useCallback(async () => {
+  const refreshSettings = useCallback(async () => {
     const s = await getSettings();
     setLocalSettings(s);
     setGoogleClientId(s.googleDriveToken ? '***' : '');
     setDropboxClientId(s.dropboxToken ? '***' : '');
+
+    if (s.cloudProvider === 'google-drive' && s.googleDriveToken) {
+      try {
+        const files = await listDriveFiles(s.googleDriveToken);
+        setBackupCount(files.length);
+        setCloudStatus('connected');
+      } catch {
+        setCloudStatus('connected');
+      }
+    } else if (s.cloudProvider === 'dropbox' && s.dropboxToken) {
+      try {
+        const files = await listDropboxFiles(s.dropboxToken);
+        setBackupCount(files.length);
+        setCloudStatus('connected');
+      } catch {
+        setCloudStatus('connected');
+      }
+    }
   }, []);
 
   useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+    let ignore = false;
+    getSettings().then((s) => {
+      if (ignore) return;
+      setLocalSettings(s);
+      setGoogleClientId(s.googleDriveToken ? '***' : '');
+      setDropboxClientId(s.dropboxToken ? '***' : '');
+
+      if (s.cloudProvider === 'google-drive' && s.googleDriveToken) {
+        listDriveFiles(s.googleDriveToken)
+          .then((files) => {
+            if (!ignore) {
+              setBackupCount(files.length);
+              setCloudStatus('connected');
+            }
+          })
+          .catch(() => {
+            if (!ignore) setCloudStatus('connected');
+          });
+      } else if (s.cloudProvider === 'dropbox' && s.dropboxToken) {
+        listDropboxFiles(s.dropboxToken)
+          .then((files) => {
+            if (!ignore) {
+              setBackupCount(files.length);
+              setCloudStatus('connected');
+            }
+          })
+          .catch(() => {
+            if (!ignore) setCloudStatus('connected');
+          });
+      }
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage(text);
     setStatusType(type);
-    setTimeout(() => setStatusType('idle'), 3000);
+    setTimeout(() => setStatusType('idle'), 3500);
   };
 
   const handleConnectGoogleDrive = async () => {
@@ -56,10 +118,13 @@ export function SettingsTab() {
     setCloudError('');
     try {
       await authorizeGoogleDrive(googleClientId.trim());
-      const files = await listDriveFiles((await getSettings()).googleDriveToken!);
-      setBackupCount(files.length);
+      const s = await getSettings();
+      if (s.googleDriveToken) {
+        const files = await listDriveFiles(s.googleDriveToken);
+        setBackupCount(files.length);
+      }
       setCloudStatus('connected');
-      await loadSettings();
+      await refreshSettings();
       showMessage('Google Drive connected successfully', 'success');
     } catch (err) {
       setCloudStatus('error');
@@ -77,10 +142,13 @@ export function SettingsTab() {
     setCloudError('');
     try {
       await authorizeDropbox(dropboxClientId.trim());
-      const files = await listDropboxFiles((await getSettings()).dropboxToken!);
-      setBackupCount(files.length);
+      const s = await getSettings();
+      if (s.dropboxToken) {
+        const files = await listDropboxFiles(s.dropboxToken);
+        setBackupCount(files.length);
+      }
       setCloudStatus('connected');
-      await loadSettings();
+      await refreshSettings();
       showMessage('Dropbox connected successfully', 'success');
     } catch (err) {
       setCloudStatus('error');
@@ -93,17 +161,56 @@ export function SettingsTab() {
     const provider = settings?.cloudProvider;
     if (!provider) return;
     await clearCloudToken(provider);
-    await loadSettings();
+    await refreshSettings();
     setCloudStatus('idle');
     setBackupCount(0);
     showMessage('Cloud provider disconnected', 'success');
+  };
+
+  const handleManualCloudBackup = async () => {
+    if (!settings?.cloudProvider) {
+      showMessage('No cloud provider connected', 'error');
+      return;
+    }
+    if (!settings.autoBackupPassword) {
+      showMessage('Set a backup password below first', 'error');
+      return;
+    }
+
+    setIsBackingUpToCloud(true);
+    try {
+      const cookies = await getAllCookies();
+      const blob = await encryptData(cookies, settings.autoBackupPassword);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `cookies-manual-${timestamp}.cv`;
+
+      if (settings.cloudProvider === 'google-drive') {
+        const token = await getGoogleDriveToken();
+        if (!token) throw new Error('Google Drive token missing');
+        await uploadToDrive(token, filename, blob);
+        const files = await listDriveFiles(token);
+        setBackupCount(files.length);
+      } else if (settings.cloudProvider === 'dropbox') {
+        const token = await getDropboxToken();
+        if (!token) throw new Error('Dropbox token missing');
+        await uploadToDropbox(token, filename, blob);
+        const files = await listDropboxFiles(token);
+        setBackupCount(files.length);
+      }
+
+      showMessage(`Uploaded ${cookies.length} cookies to ${settings.cloudProvider}`, 'success');
+    } catch (err) {
+      showMessage(err instanceof Error ? err.message : 'Cloud backup failed', 'error');
+    } finally {
+      setIsBackingUpToCloud(false);
+    }
   };
 
   const ALARM_NAME = 'cookie-vault-auto-backup';
 
   const handleToggleAutoBackup = async (enabled: boolean) => {
     await setSettings({ autoBackupEnabled: enabled });
-    await loadSettings();
+    await refreshSettings();
     if (enabled) {
       const freq = settings?.autoBackupFrequency || 'daily';
       const periodInMinutes = freq === 'daily' ? 24 * 60 : 7 * 24 * 60;
@@ -117,13 +224,13 @@ export function SettingsTab() {
 
   const handleSetAutoBackupPassword = async (password: string) => {
     await setSettings({ autoBackupPassword: password || null });
-    await loadSettings();
+    await refreshSettings();
     showMessage('Auto-backup password updated', 'success');
   };
 
   const handleSetFrequency = async (frequency: 'daily' | 'weekly') => {
     await setSettings({ autoBackupFrequency: frequency });
-    await loadSettings();
+    await refreshSettings();
     if (settings?.autoBackupEnabled) {
       const periodInMinutes = frequency === 'daily' ? 24 * 60 : 7 * 24 * 60;
       await browser.alarms.create(ALARM_NAME, { periodInMinutes });
@@ -156,19 +263,46 @@ export function SettingsTab() {
 
         {settings.cloudProvider ? (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="capitalize">
-                {settings.cloudProvider.replace('-', ' ')} connected
-              </span>
-              {backupCount > 0 && (
-                <span className="text-xs text-muted-foreground">({backupCount} backups)</span>
-              )}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="capitalize font-medium">
+                  {settings.cloudProvider.replace('-', ' ')}
+                </span>
+                {backupCount > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    ({backupCount} cloud vaults)
+                  </span>
+                )}
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={handleDisconnect}>
+                <XCircle className="w-4 h-4 mr-1.5" />
+                Disconnect
+              </Button>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={handleDisconnect}>
-              <XCircle className="w-4 h-4 mr-2" />
-              Disconnect
-            </Button>
+
+            <div className="pt-2 border-t border-border/50 flex gap-2">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                className="w-full"
+                onClick={handleManualCloudBackup}
+                disabled={isBackingUpToCloud}
+              >
+                {isBackingUpToCloud ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Backing up to Cloud...
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-4 h-4 mr-2" />
+                    Backup to Cloud Now
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -246,7 +380,7 @@ export function SettingsTab() {
                 >
                   Dropbox App Console
                 </a>{' '}
-                and add your extension's redirect URL.
+                and add your extension&apos;s redirect URL.
               </p>
             </div>
           </div>
@@ -323,7 +457,7 @@ export function SettingsTab() {
                 checked={settings.autoBackupCloudEnabled}
                 onChange={() =>
                   setSettings({ autoBackupCloudEnabled: !settings.autoBackupCloudEnabled }).then(
-                    loadSettings
+                    refreshSettings
                   )
                 }
                 id="auto-backup-cloud-toggle"
@@ -359,7 +493,7 @@ export function SettingsTab() {
           size="sm"
           onClick={async () => {
             await browser.storage.local.clear();
-            await loadSettings();
+            await refreshSettings();
             showMessage('All local data cleared', 'success');
           }}
         >
@@ -370,6 +504,7 @@ export function SettingsTab() {
       {/* Status Message */}
       {statusType !== 'idle' && message && (
         <div
+          aria-live="polite"
           className={`p-4 rounded-xl text-sm font-medium ${
             statusType === 'error'
               ? 'bg-destructive/10 text-destructive border border-destructive/20'

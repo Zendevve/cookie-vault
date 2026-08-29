@@ -250,31 +250,37 @@ export function RestoreFlow() {
             {showWarnings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
-          {showWarnings && (
-            <div id="warnings-panel" className="max-h-48 overflow-y-auto divide-y divide-border">
-              {restoreDetails
-                .filter((d) => d.status !== 'success')
-                .map((detail, idx) => (
-                  <div
-                    key={`${detail.domain}-${detail.name}-${idx}`}
-                    className="p-3 flex items-start gap-3 text-xs"
-                  >
-                    {detail.status === 'skipped' ? (
-                      <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{detail.name}</p>
-                      <p className="text-muted-foreground truncate">{detail.domain}</p>
-                      {detail.reason && (
-                        <p className="text-muted-foreground mt-1">{detail.reason}</p>
+          <div
+            id="warnings-panel"
+            className={`accordion-grid ${showWarnings ? 'accordion-grid-expanded' : ''}`}
+            aria-hidden={!showWarnings}
+          >
+            <div className="accordion-content">
+              <div className="max-h-48 overflow-y-auto divide-y divide-border">
+                {restoreDetails
+                  .filter((d) => d.status !== 'success')
+                  .map((detail, idx) => (
+                    <div
+                      key={`${detail.domain}-${detail.name}-${idx}`}
+                      className="p-3 flex items-start gap-3 text-xs"
+                    >
+                      {detail.status === 'skipped' ? (
+                        <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
                       )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{detail.name}</p>
+                        <p className="text-muted-foreground truncate">{detail.domain}</p>
+                        {detail.reason && (
+                          <p className="text-muted-foreground mt-1">{detail.reason}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       )}
 

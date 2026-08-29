@@ -133,8 +133,12 @@ export function DomainPicker({
               </div>
 
               {/* Cookie Rows */}
-              {group.expanded && (
-                <div id={`cookies-${group.domain}`} className="bg-muted/30">
+              <div
+                id={`cookies-${group.domain}`}
+                className={`accordion-grid ${group.expanded ? 'accordion-grid-expanded' : ''}`}
+                aria-hidden={!group.expanded}
+              >
+                <div className="accordion-content bg-muted/30">
                   {group.cookies.map((c) => (
                     <label
                       key={`${c.cookie.name}-${c.cookie.path}`}
@@ -159,7 +163,7 @@ export function DomainPicker({
                     </label>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           );
         })}

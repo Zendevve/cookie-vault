@@ -105,15 +105,15 @@ export function ExportTab({ onStatusChange, status }: ExportTabProps) {
             disabled={status === 'loading'}
           >
             {copiedToClipboard ? (
-              <>
+              <span className="inline-flex items-center animate-icon-pop text-green-600 dark:text-green-400">
                 <CheckCheck className="w-4 h-4 mr-2" />
                 Copied!
-              </>
+              </span>
             ) : (
-              <>
+              <span className="inline-flex items-center">
                 <Clipboard className="w-4 h-4 mr-2" />
                 Copy
-              </>
+              </span>
             )}
           </Button>
           <Button

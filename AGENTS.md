@@ -1,192 +1,162 @@
-# AGENTS.md
+# Repository Guidelines
 
-<!-- CUSTOMIZE (remove after): project name and stack -->
+## Project Overview
 
-Cookie Vault — React, Vite, TypeScript, Chrome Extension
+Cookie Vault is a privacy-first, browser extension (Manifest V3 for Chrome/Edge and Firefox) built with React 19, TypeScript, Vite, and Tailwind CSS. It provides client-side encrypted cookie backups, selective domain restoration, third-party export formats (Netscape/wget/curl, JDownloader 2, raw JSON/cURL headers), and automated cloud backups (Google Drive, Dropbox) without third-party tracking, analytics, or external telemetry.
 
-Follows [MCAF](https://mcaf.managed-code.com/)
+## Architecture & Data Flow
 
----
+The extension operates across two primary execution contexts coordinated via WebExtension APIs and persistent storage:
 
-## Conversations (Self-Learning)
+```
++-------------------------------------------------------------------------+
+| Extension Popup UI (src/App.tsx, 400x500px, React 19)                   |
+|                                                                         |
+|  +---------------+  +---------------+  +---------------+  +----------+  |
+|  |  BackupFlow   |  |  RestoreFlow  |  |   ExportTab   |  | Settings |  |
+|  +-------+-------+  +-------+-------+  +-------+-------+  +----+-----+  |
+|          |                  |                  |               |        |
+|          v                  v                  v               v        |
+|  +---------------+  +---------------+  +---------------+  +----------+  |
+|  | DomainPicker  |  | useDomainSel  |  | exportFormats |  |  oauth   |  |
+|  +-------+-------+  +-------+-------+  +-------+-------+  +----+-----+  |
+|          \                  |                  /               |        |
+|           +-----------------+-----------------+                |        |
+|                             |                                  |        |
+|                             v                                  v        |
+|                      src/utils/crypto.ts             src/utils/storage  |
+|                      (AES-256-GCM / PBKDF2)          (chrome.storage)   |
+|                             |                                  |        |
++-----------------------------|----------------------------------|--------+
+                              v                                  v
++-------------------------------------------------------------------------+
+| Background Service Worker (src/background.ts)                           |
+|  - Alarms listener (`cookie-vault-auto-backup` daily/weekly)             |
+|  - Headless backup execution -> crypto.ts -> cloud-sync (Drive/Dropbox) |
++-------------------------------------------------------------------------+
+                              |
+                              v
++-------------------------------------------------------------------------+
+| Host Browser & External APIs                                            |
+|  - chrome.cookies / browser.cookies (getAll, set)                       |
+|  - chrome.identity (launchWebAuthFlow for PKCE OAuth)                   |
+|  - Google Drive API / Dropbox API (Cloud backups)                       |
+|  - browser.downloads / DOM fallback (File downloads)                    |
++-------------------------------------------------------------------------+
+```
 
-Learn the user's habits, preferences, and working style. Extract rules from conversations, save to "## Rules to follow", and generate code according to the user's personal rules.
+### Key Modules & Data Flow
 
-**Update requirement (core mechanism):**
+1. **Cookie Ingestion & Normalization (`src/utils/cookies.ts`)**:
+   - `getAllCookies()` queries unpartitioned and partitioned cookies across all stores via `browser.cookies.getAll({})`.
+   - `groupCookiesByDomain()` clusters cookies by base domain (stripping leading dots, sorted descending by cookie count).
+   - `filterCookiesByDomains()` filters cookies matching user-selected domain trees.
+2. **Cryptographic Engine (`src/utils/crypto.ts`, `src/utils/password.ts`)**:
+   - **Key Derivation**: PBKDF2 with SHA-256, 100,000 iterations, and a 16-byte cryptographically random salt (`crypto.getRandomValues`).
+   - **Encryption**: AES-256-GCM with 12-byte random initialization vector (IV).
+   - **V3 Single-Pass Format**: Payloads ≤ 1MB; produces `{ version: 3, salt, iv, data, checksum }`.
+   - **V4 Chunked Format**: Payloads > 1MB; slices ciphertext into 1MB chunks with unique IVs: `{ version: 4, salt, chunks: [{ iv, data }], checksum, totalSize, chunkSize }`.
+   - **Legacy Decryption**: Automatic format detection backwards compatibility with V2 (WebCrypto) and V1 (SJCL via `sjcl`).
+   - **Integrity**: Deterministic SHA-256 verification checksum generated and validated on unencrypted string payloads.
+3. **Cookie Restoration (`src/utils/cookies.ts`)**:
+   - Sanitizes cookies before `browser.cookies.set()`: strips `hostOnly` (omits domain or prepends leading dot), deletes expired session dates, and preserves `sameSite` rules.
+   - **HSTS / Protocol Fallback**: Sets `url: "https://${domain}${path}"` by default; automatically falls back to `http://` on failure when `secure: false`.
+   - Emits step-by-step progress callbacks (`onProgress({ current, total, number })`) for live UI feedback.
+4. **Export Engine (`src/utils/exportFormats.ts`, `netscape.ts`, `jdownloader.ts`)**:
+   - Formats cookies into Netscape HTTP Cookie format (`#HttpOnly_` prefix, uppercase `TRUE`/`FALSE`, UNIX timestamp in seconds, 7-column TSV), JDownloader 2 JSON array schema, or raw cURL `Cookie:` header strings.
+5. **Background & Cloud Sync (`src/background.ts`, `src/utils/cloud-sync/`)**:
+   - Background alarms trigger headless cookie backups.
+   - OAuth 2.0 PKCE flow via `browser.identity.launchWebAuthFlow` securely acquires access tokens for Google Drive (`drive.file` scope) or Dropbox without hardcoded client secrets.
 
-Before doing ANY task, evaluate the latest user message.
-If you detect a new rule, correction, preference, or change → update `agents.md` first.
-Only after updating the file you may produce the task output.
-If no new rule is detected → do not update the file.
+## Key Directories
 
-**When to extract rules:**
+- `src/`: Root application source code.
+  - `components/`: UI components (`BackupFlow.tsx`, `RestoreFlow.tsx`, `ExportTab.tsx`, `SettingsTab.tsx`, `DomainPicker.tsx`, `ErrorBoundary.tsx`).
+  - `components/ui/`: Atomic UI primitives (`Button.tsx`, `Checkbox.tsx`) adhering to Apple HIG guidelines.
+  - `hooks/`: Custom React hooks (`useDomainSelection.ts` for domain tree selection, search, and expansion state).
+  - `utils/`: Core domain logic, cryptographic operations, browser API wrappers, export formatters.
+  - `utils/cloud-sync/`: OAuth 2.0 PKCE client and Google Drive / Dropbox API connectors.
+  - `lib/`: Shared helper functions (e.g., `cn()` in `utils.ts` for Tailwind class merging).
+  - `test/`: Test setup and global mocks (`setup.ts`).
+- `public/`: Static extension assets and icons (`icon-16.png`, `icon-48.png`, `icon-128.png`).
+- `scripts/`: Custom build scripts (`build-firefox.mjs` for Firefox manifest generation and distribution packaging).
+- `docs/`: Design system guidelines (`DESIGN_SYSTEM.md`), architecture decision records (`ADR/`), feature specifications (`Features/`).
+- `.planning/`: Detailed project requirements, state tracking, and codebase references (`.planning/codebase/`).
 
-- prohibition words (never, don't, stop, avoid) or similar → add NEVER rule
-- requirement words (always, must, make sure, should) or similar → add ALWAYS rule
-- memory words (remember, keep in mind, note that) or similar → add rule
-- process words (the process is, the workflow is, we do it like) or similar → add to workflow
-- future words (from now on, going forward) or similar → add permanent rule
+## Development Commands
 
-**Preferences → add to Preferences section:**
+- **Install Dependencies**: `npm install`
+- **Development Server**: `npm run dev` (starts Vite with `@crxjs/vite-plugin` for Chrome extension HMR)
+- **Production Build (Chrome/Chromium)**: `npm run build` (type-checks with `tsc -b` and bundles into `dist/`)
+- **Production Build (Firefox)**: `npm run build:firefox` (runs `npm run build` and copies to `dist-firefox/` with Firefox manifest)
+- **Run Tests (Interactive / Watch)**: `npm test` (starts Vitest in watch mode)
+- **Run Tests (Single Run / CI)**: `npx vitest run` or `npm test -- --run`
+- **Lint Code**: `npm run lint` (runs ESLint 9 flat config across `**/*.{ts,tsx}`)
+- **Format Code**: `npm run format` (runs Prettier over all files)
+- **Preview Build**: `npm run preview`
 
-- positive (I like, I prefer, this is better) or similar → Likes
-- negative (I don't like, I hate, this is bad) or similar → Dislikes
-- comparison (prefer X over Y, use X instead of Y) or similar → preference rule
+## Code Conventions & Common Patterns
 
-**Corrections → update or add rule:**
+- **Language & Types**: Strict TypeScript (`tsconfig.app.json` enforces `strict: true`, `noUnusedLocals: true`, `noUnusedParameters: true`, `erasableSyntaxOnly: true`, `verbatimModuleSyntax: true`).
+  - Use `import type` for pure type imports.
+  - Explicitly define interfaces for domain entities (`Cookie`, `VaultSettings`, `DomainSelection`, `WebCryptoBackupFormat`, `ChunkedBackupFormat`).
+  - Zero usage of `any` in application code.
+- **State Management**:
+  - Local component state managed with standard React hooks (`useState`, `useCallback`, `useMemo`, `useRef`).
+  - Complex UI domain interactions encapsulated in custom hooks (e.g., `useDomainSelection.ts`).
+  - Extension-level persistent state managed through `chrome.storage.local` via typed helper `src/utils/storage.ts`.
+- **Async & Error Handling**:
+  - Use `async`/`await` throughout; avoid raw Promise chains.
+  - Defensive API checks: check for extension APIs before invocation (`typeof chrome !== 'undefined' && !!chrome.cookies`).
+  - Safe error extraction: `const message = err instanceof Error ? err.message : 'Unknown error'`.
+  - Non-blocking batch processing: in cookie restore or encryption flows, individual item failures do not abort the entire batch; collect granular errors in structured result objects (`RestoreDetails`).
+  - Fallback mechanisms: graceful degradation for file downloads (falling back to DOM `<a>` tag) and HTTP/HTTPS protocol retries.
+  - UI crash prevention: top-level `ErrorBoundary.tsx` catches render errors and presents a recovery action.
+- **Design System & UI Patterns (Apple HIG)**:
+  - Styling with Tailwind CSS utility classes and semantic CSS tokens (`var(--background)`, `var(--primary)`, etc.).
+  - Dark mode by default (slate-950 base `hsl(222.2, 84%, 4.9%)`; never pure `#000`).
+  - Touch targets must be at least 44x44pt (`min-h-[44px] min-w-[44px]`).
+  - Support `prefers-reduced-motion` (disable non-essential CSS transitions).
+  - High color contrast ratio (minimum 4.5:1 for text).
+- **MCAF Workflow Adherence**:
+  - Always follow the MCAF engineering discipline: Read context & docs -> Multi-step plan -> Implement code WITH tests -> Run tests in layers -> Format -> Build -> Commit.
 
-- error indication (this is wrong, incorrect, broken) or similar → fix and add rule
-- repetition frustration (don't do this again, you ignored, you missed) or similar → emphatic rule
-- manual fixes by user → extract what changed and why
+## Important Files
 
-**Strong signal (add IMMEDIATELY):**
+- `manifest.json`: Chrome / Chromium extension Manifest V3 definition (`background.service_worker: "src/background.ts"`).
+- `manifest-firefox.json`: Firefox-specific extension manifest (`background.scripts: ["src/background.ts"]`, `browser_specific_settings.gecko.id`).
+- `src/App.tsx`: Main popup UI container and tab router (400x500px fixed viewport).
+- `src/background.ts`: Extension service worker managing automated background backups and alarms.
+- `src/utils/crypto.ts`: Encryption, decryption, chunking, and backward-compatible format parsers.
+- `src/utils/cookies.ts`: Chrome cookie ingestion, filtering, and sanitization/restore logic.
+- `src/utils/storage.ts`: Strongly-typed `chrome.storage.local` settings wrapper.
+- `vite.config.ts`: Vite build configuration with `@crxjs/vite-plugin` and `@vitejs/plugin-react`.
+- `vitest.config.ts`: Vitest test runner configuration using `jsdom` environment and global test setup.
+- `eslint.config.js`: ESLint 9 flat configuration.
+- `scripts/build-firefox.mjs`: Node.js script to create the Firefox extension distribution in `dist-firefox/`.
 
-- swearing, frustration, anger, sarcasm → critical rule
-- ALL CAPS, excessive punctuation (!!!, ???) → high priority
-- same mistake twice → permanent emphatic rule
-- user undoes your changes → understand why, prevent
+## Runtime/Tooling Preferences
 
-**Ignore (do NOT add):**
+- **Runtime Environment**: Node.js >= 20.0.0 (or ES2022+ compatible runtime). Use `node:` protocol for built-in imports in scripts (e.g., `node:fs`, `node:path`).
+- **Package Manager**: `npm` (with `package-lock.json`, lockfile version 3).
+- **Module System**: Pure ES Modules (`"type": "module"` in `package.json`).
+- **Tooling Constraints**:
+  - Do NOT import Node built-ins inside browser/extension source code under `src/`.
+  - Use `webextension-polyfill` (`import browser from 'webextension-polyfill'`) or `chrome.*` for cross-browser extension APIs.
+  - TS Solution references: Always run type checking via `tsc -b`.
 
-- temporary scope (only for now, just this time, for this task) or similar
-- one-off exceptions
-- context-specific instructions for current task only
+## Testing & QA
 
-**Rule format:**
-
-- One instruction per bullet
-- Tie to category (Testing, Code, Docs, etc.)
-- Capture WHY, not just what
-- Remove obsolete rules when superseded
-
----
-
-## Rules to follow (Mandatory, no exceptions)
-
-### Commands
-
-<!-- CUSTOMIZE (remove after): your build/test/format commands -->
-
-- build: `npm run build`
-- test: `npm run test` (Vitest)
-- format: `npm run format` (Prettier)
-- lint: `npm run lint` (ESLint)
-
-### Task Delivery (ALL TASKS)
-
-<!-- CUSTOMIZE (remove after): your task workflow -->
-
-- Read assignment, inspect code and docs before planning
-- Write multi-step plan before implementation
-- Implement code and tests together
-- Run tests in layers: new → related suite → broader regressions
-- After all tests pass: run format, then build
-- Summarize changes and test results before marking complete
-- Always run required builds and tests yourself; do not ask the user to execute them (explicit user directive).
-
-### Documentation (ALL TASKS)
-
-<!-- CUSTOMIZE (remove after): your docs location -->
-
-- All docs live in `docs/`
-- Update feature docs when behaviour changes
-- Update ADRs when architecture changes
-- Templates: `docs/templates/ADR-Template.md`, `docs/templates/Feature-Template.md`
-
-### Testing (ALL TASKS)
-
-<!-- CUSTOMIZE (remove after): your test structure -->
-
-- Every behaviour change needs sufficient automated tests to cover its cases; one is the minimum, not the target
-- Each public API endpoint has at least one test; complex endpoints have tests for different inputs and errors
-- Integration tests must exercise real flows end-to-end, not just call endpoints in isolation
-- Prefer integration/API/UI tests over unit tests
-- No mocks for internal systems (DB, queues, caches) — use containers (or real browser APIs in tests where possible)
-- Mocks only for external third-party systems
-- Never delete or weaken a test to make it pass
-- Each test verifies a real flow or scenario, not just calls a function — tests without meaningful assertions are forbidden
-- Check code coverage to see which functionality is actually tested; coverage is for finding gaps, not a number to chase
-
-### Autonomy
-
-- Start work immediately — no permission seeking
-- Questions only for architecture blockers not covered by ADR
-- Report only when task is complete
-
-### Code Style
-
-<!-- CUSTOMIZE (remove after): your language/framework -->
-
-- Style rules: `eslint.config.js`, `.prettierrc`
-- No magic literals — extract to constants, enums, config
-- Use TypeScript for all new code. Use strict mode.
-- Use React functional components with hooks.
-- Use TailwindCSS for styling.
-
-### Design (Apple HIG)
-
-Reference: `docs/DESIGN_SYSTEM.md`
-
-**Accessibility:**
-
-- Minimum 4.5:1 color contrast ratio for text
-- 44×44pt minimum touch targets (28×28pt absolute minimum)
-- Never rely on color alone — always pair with icons/shapes
-- Support reduced motion preference via `prefers-reduced-motion`
-- Provide accessible labels for all interactive elements
-
-**Color:**
-
-- Use semantic color tokens, not hard-coded values
-- Support both light and dark modes
-- Never use pure black (#000) for dark backgrounds — causes halation
-- Elevated surfaces should be lighter than base in dark mode
-
-**Layout:**
-
-- 12pt padding around bezeled elements
-- 24pt padding around non-bezeled elements
-- Respect safe areas and system margins
-- Content extends to fill available space
-
-**Motion:**
-
-- Keep transitions short (200-300ms)
-- Use ease-out for natural feel
-- Disable animations when reduced motion is preferred
-
-### Critical (NEVER violate)
-
-- Never commit secrets, keys, connection strings
-- Never mock internal systems in integration tests
-- Never skip tests to make PR green
-- Never force push to main
-- Never approve or merge (human decision)
-
-### Boundaries
-
-**Always:**
-
-- Read AGENTS.md and docs before editing code
-- Run tests before commit
-
-**Ask first:**
-
-<!-- CUSTOMIZE (remove after) -->
-
-- Changing public API contracts
-- Adding new dependencies
-- Modifying database schema
-- Deleting code files
-
----
-
-## Preferences
-
-### Likes
-
-- MCAF adherence (ALWAYS follow MCAF, it's the guiding principle - user explicit directive)
-
-### Dislikes
-
-- NOT FOLLOWING MCAF (user emphatic: "DUMBFUCK MAKE SURE THIS IS FOLLOWING MCAF") - ALWAYS follow the full MCAF workflow: read docs → plan → implement WITH tests → run tests → format → build → commit. Never skip steps.
+- **Frameworks**: Vitest v4 (`vitest`), `jsdom` v27, `@testing-library/react` v16, `@testing-library/jest-dom` v6.
+- **Global Setup (`src/test/setup.ts`)**:
+  - Initializes `globalThis.chrome` stub for `cookies` and `downloads`.
+  - Mocks `webextension-polyfill` to prevent extension runtime errors in jsdom.
+- **Testing Principles**:
+  - **Co-location**: Tests live directly alongside the source file (e.g., `src/utils/crypto.test.ts` next to `src/utils/crypto.ts`).
+  - **Real Cryptography**: `crypto.subtle` runs with native Web Crypto in jsdom—never mock cryptographic primitives.
+  - **Mock Host Boundaries Only**: Only mock external browser extension APIs (`browser.cookies`, `browser.downloads`), cloud endpoints, or non-deterministic external utilities (`zxcvbn`).
+  - **Behavioral & Scenario Coverage**: Tests must assert real flows and boundary cases (e.g., HTTPS retry fallback, checksum mismatch rejection, chunked encryption > 1MB, Netscape TSV format compliance, expired cookie omission).
+  - **Mock Hygiene**: Always clear mocks in `beforeEach(() => { vi.clearAllMocks(); })`.
+- **Running Tests**:
+  - Watch mode during development: `npm test`
+  - Single execution for CI or pre-commit verification: `npx vitest run` or `npm test -- --run`

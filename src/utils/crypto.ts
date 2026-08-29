@@ -18,6 +18,36 @@ export interface Cookie {
   hostOnly?: boolean;
 }
 
+export interface WebCryptoBackupFormat {
+  version: 'v2' | 'v3';
+  salt: number[];
+  iv: number[];
+  data: number[];
+  checksum?: string;
+}
+
+export interface ChunkedBackupFormat {
+  version: 'v4';
+  salt: number[];
+  chunks: Array<{ iv: number[]; data: number[] }>;
+  chunkSize: number;
+  totalSize: number;
+  checksum?: string;
+}
+
+export interface LegacySjclFormat {
+  iv: string;
+  v: number;
+  iter: number;
+  ks: number;
+  ts: number;
+  mode: string;
+  adata: string;
+  cipher: string;
+  salt: string;
+  ct: string;
+}
+
 /**
  * Encrypts data using AES-GCM (Web Crypto API) with chunked processing
  * @param data The data to encrypt (object or string)
@@ -25,9 +55,8 @@ export interface Cookie {
  * @param onProgress Optional progress callback (current, total)
  * @returns Blob containing the encrypted data
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic encryption function accepts any data
 export async function encryptData(
-  data: any,
+  data: unknown,
   password: string,
   onProgress?: (current: number, total: number) => void
 ): Promise<Blob> {
@@ -102,7 +131,7 @@ async function encryptSinglePass(
   const checksum = await generateChecksum(rawData);
 
   // 6. Pack result
-  const result = {
+  const result: WebCryptoBackupFormat = {
     version: 'v3', // Keep v3 for single-pass (backward compatible)
     salt: Array.from(salt),
     iv: Array.from(iv),
@@ -193,7 +222,7 @@ async function encryptChunked(
   const checksum = await generateChecksum(rawData);
 
   // 5. Pack result
-  const result = {
+  const result: ChunkedBackupFormat = {
     version: 'v4', // New version for chunked format
     salt: Array.from(salt),
     chunks: encryptedChunks,
@@ -214,23 +243,22 @@ async function encryptChunked(
  * @param onProgress Optional progress callback (current, total)
  * @returns The decrypted data object (usually Cookie[])
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns parsed JSON of unknown structure
 export async function decryptData(
   fileContent: string,
   password: string,
   onProgress?: (current: number, total: number) => void
-): Promise<any> {
+): Promise<unknown> {
   try {
-    const json = JSON.parse(fileContent);
+    const json = JSON.parse(fileContent) as Record<string, unknown>;
 
     // Check for v4 format (chunked)
     if (json.version === 'v4' && json.salt && json.chunks && Array.isArray(json.chunks)) {
-      return await decryptChunked(json, password, onProgress);
+      return await decryptChunked(json as unknown as ChunkedBackupFormat, password, onProgress);
     }
 
     // Check for v2/v3 format (WebCrypto single-pass)
     if ((json.version === 'v2' || json.version === 'v3') && json.salt && json.iv && json.data) {
-      return await decryptWebCrypto(json, password, onProgress);
+      return await decryptWebCrypto(json as unknown as WebCryptoBackupFormat, password, onProgress);
     }
 
     // Check for legacy SJCL format
@@ -249,12 +277,11 @@ export async function decryptData(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Parsed JSON structures
 async function decryptWebCrypto(
-  json: any,
+  json: WebCryptoBackupFormat,
   password: string,
   onProgress?: (current: number, total: number) => void
-): Promise<any> {
+): Promise<unknown> {
   const enc = new TextEncoder();
   const salt = new Uint8Array(json.salt);
   const iv = new Uint8Array(json.iv);
@@ -307,7 +334,7 @@ async function decryptWebCrypto(
 
     if (onProgress) onProgress(2, 2); // Complete
 
-    return JSON.parse(decryptedText);
+    return JSON.parse(decryptedText) as unknown;
   } catch (err) {
     if (err instanceof Error && err.message.includes('checksum')) {
       throw err;
@@ -319,12 +346,11 @@ async function decryptWebCrypto(
 /**
  * Decrypt v4 chunked format
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function decryptChunked(
-  json: any,
+  json: ChunkedBackupFormat,
   password: string,
   onProgress?: (current: number, total: number) => void
-): Promise<any> {
+): Promise<unknown> {
   const enc = new TextEncoder();
   const dec = new TextDecoder();
   const salt = new Uint8Array(json.salt);
@@ -405,7 +431,7 @@ async function decryptChunked(
 
     if (onProgress) onProgress(progressSteps, progressSteps); // Complete
 
-    return JSON.parse(decryptedText);
+    return JSON.parse(decryptedText) as unknown;
   } catch (err) {
     if (err instanceof Error && err.message.includes('checksum')) {
       throw err;
@@ -414,11 +440,10 @@ async function decryptChunked(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns parsed JSON
-function decryptLegacy(fileContent: string, password: string): any {
+function decryptLegacy(fileContent: string, password: string): unknown {
   try {
     const decrypted = sjcl.decrypt(password, fileContent);
-    return JSON.parse(decrypted);
+    return JSON.parse(decrypted) as unknown;
   } catch (e: unknown) {
     // SJCL throws specific exceptions, but we just want to bubble "Incorrect password"
     const error = e as Error;

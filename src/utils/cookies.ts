@@ -29,8 +29,34 @@ export interface RestoreResult {
  */
 export interface DomainGroup {
   domain: string;
+  count: number;
   cookies: Cookie[];
   selected: boolean;
+}
+
+/**
+ * High-level security and storage statistics for cookie collection
+ */
+export interface CookieStats {
+  totalCookies: number;
+  totalDomains: number;
+  secureCount: number;
+  securePercentage: number;
+  httpOnlyCount: number;
+  httpOnlyPercentage: number;
+  sessionCount: number;
+  expiringSoonCount: number;
+  totalSizeBytes: number;
+}
+
+/**
+ * Constructs a fully qualified URL for a cookie
+ */
+export function buildCookieUrl(cookie: Pick<Cookie, 'secure' | 'domain' | 'path'>): string {
+  const protocol = cookie.secure ? 'https:' : 'http:';
+  const cleanDomain = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
+  const cleanPath = cookie.path.startsWith('/') ? cookie.path : `/${cookie.path}`;
+  return `${protocol}//${cleanDomain}${cleanPath}`;
 }
 
 /**
@@ -39,34 +65,42 @@ export interface DomainGroup {
  * @returns Array of DomainGroup objects sorted by cookie count (descending)
  */
 export function groupCookiesByDomain(cookies: Cookie[]): DomainGroup[] {
-  const domainMap = new Map<string, Cookie[]>();
+  const groups = new Map<string, Cookie[]>();
 
   for (const cookie of cookies) {
-    // Normalize domain (remove leading dot)
     const domain = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
-
-    const existing = domainMap.get(domain) || [];
-    existing.push(cookie);
-    domainMap.set(domain, existing);
+    if (!groups.has(domain)) {
+      groups.set(domain, []);
+    }
+    groups.get(domain)!.push(cookie);
   }
 
-  // Convert to array and sort by cookie count (most cookies first)
-  const groups: DomainGroup[] = Array.from(domainMap.entries())
-    .map(([domain, cookies]) => ({
+  const result: DomainGroup[] = [];
+  for (const [domain, domainCookies] of groups.entries()) {
+    result.push({
       domain,
-      cookies,
-      selected: true, // Default to selected
-    }))
-    .sort((a, b) => b.cookies.length - a.cookies.length);
+      count: domainCookies.length,
+      cookies: domainCookies,
+      selected: true,
+    });
+  }
 
-  return groups;
+  // Sort by count descending, then domain alphabetically
+  result.sort((a, b) => {
+    if (b.count !== a.count) {
+      return b.count - a.count;
+    }
+    return a.domain.localeCompare(b.domain);
+  });
+
+  return result;
 }
 
 /**
  * Filters cookies to only include those from selected domains
- * @param cookies All cookies
+ * @param cookies Array of all cookies
  * @param selectedDomains Set of domain names to include
- * @returns Filtered cookie array
+ * @returns Filtered array of cookies
  */
 export function filterCookiesByDomains(cookies: Cookie[], selectedDomains: Set<string>): Cookie[] {
   return cookies.filter((cookie) => {
@@ -75,9 +109,147 @@ export function filterCookiesByDomains(cookies: Cookie[], selectedDomains: Set<s
   });
 }
 
+/**
+ * Computes security and volume statistics for a cookie collection
+ */
+export function calculateCookieStats(cookies: Cookie[]): CookieStats {
+  const total = cookies.length;
+  if (total === 0) {
+    return {
+      totalCookies: 0,
+      totalDomains: 0,
+      secureCount: 0,
+      securePercentage: 0,
+      httpOnlyCount: 0,
+      httpOnlyPercentage: 0,
+      sessionCount: 0,
+      expiringSoonCount: 0,
+      totalSizeBytes: 0,
+    };
+  }
+
+  const domains = new Set<string>();
+  let secureCount = 0;
+  let httpOnlyCount = 0;
+  let sessionCount = 0;
+  let expiringSoonCount = 0;
+  let totalSizeBytes = 0;
+
+  const nowSeconds = Date.now() / 1000;
+  const twentyFourHoursFromNow = nowSeconds + 24 * 60 * 60;
+
+  for (const c of cookies) {
+    const domain = c.domain.startsWith('.') ? c.domain.slice(1) : c.domain;
+    domains.add(domain);
+
+    if (c.secure) secureCount++;
+    if (c.httpOnly) httpOnlyCount++;
+    if (c.session || !c.expirationDate) sessionCount++;
+
+    if (
+      c.expirationDate &&
+      c.expirationDate > nowSeconds &&
+      c.expirationDate <= twentyFourHoursFromNow
+    ) {
+      expiringSoonCount++;
+    }
+
+    totalSizeBytes +=
+      (c.name?.length || 0) +
+      (c.value?.length || 0) +
+      (c.domain?.length || 0) +
+      (c.path?.length || 0);
+  }
+
+  return {
+    totalCookies: total,
+    totalDomains: domains.size,
+    secureCount,
+    securePercentage: Math.round((secureCount / total) * 100),
+    httpOnlyCount,
+    httpOnlyPercentage: Math.round((httpOnlyCount / total) * 100),
+    sessionCount,
+    expiringSoonCount,
+    totalSizeBytes,
+  };
+}
+
+/**
+ * Retrieves the hostname of the currently active browser tab
+ */
+export async function getActiveTabDomain(): Promise<string | null> {
+  if (typeof browser === 'undefined' || !browser.tabs?.query) {
+    return null;
+  }
+
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    const activeTab = tabs[0];
+    if (!activeTab?.url) return null;
+
+    const url = new URL(activeTab.url);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.hostname;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Removes a single cookie from browser storage
+ */
+export async function deleteCookie(cookie: Cookie): Promise<boolean> {
+  if (!isExtension || typeof browser === 'undefined' || !browser.cookies?.remove) {
+    return true;
+  }
+
+  try {
+    const url = buildCookieUrl(cookie);
+    await browser.cookies.remove({
+      url,
+      name: cookie.name,
+      storeId: cookie.storeId,
+    });
+    return true;
+  } catch (err) {
+    console.error(`Failed to delete cookie ${cookie.name}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Deletes all cookies belonging to a given domain
+ */
+export async function deleteCookiesForDomain(
+  domain: string
+): Promise<{ deleted: number; failed: number }> {
+  const allCookies = await getAllCookies();
+  const normalizedTarget = domain.startsWith('.') ? domain.slice(1) : domain;
+
+  const targetCookies = allCookies.filter((c) => {
+    const d = c.domain.startsWith('.') ? c.domain.slice(1) : c.domain;
+    return d === normalizedTarget || d.endsWith(`.${normalizedTarget}`);
+  });
+
+  let deleted = 0;
+  let failed = 0;
+
+  for (const cookie of targetCookies) {
+    const ok = await deleteCookie(cookie);
+    if (ok) {
+      deleted++;
+    } else {
+      failed++;
+    }
+  }
+
+  return { deleted, failed };
+}
+
 export async function getAllCookies(): Promise<Cookie[]> {
   if (!isExtension) {
-    console.warn('Not extensions environment, returning mock cookies');
     return [
       {
         name: 'test_cookie',
@@ -95,31 +267,36 @@ export async function getAllCookies(): Promise<Cookie[]> {
   const unpartitioned = await browser.cookies.getAll({});
 
   // Fetch partitioned cookies (CHIPS - Cookies Having Independent Partitioned State)
-  // This ensures we capture cookies set with the Partitioned attribute (Chrome 119+)
   let partitioned: typeof unpartitioned = [];
   try {
-    // The partitionKey parameter with empty object fetches all partitioned cookies
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partitionKey is not typed yet
-    partitioned = await browser.cookies.getAll({ partitionKey: {} } as any);
+    interface PartitionQuery {
+      partitionKey?: Record<string, unknown>;
+    }
+    const query: PartitionQuery = { partitionKey: {} };
+    partitioned = await browser.cookies.getAll(
+      query as unknown as Parameters<typeof browser.cookies.getAll>[0]
+    );
   } catch {
-    // Older browsers may not support partitionKey, silently ignore
-    console.debug('Partitioned cookies not supported in this browser');
+    // Partitioned cookies not supported in older browser engines
   }
 
   // Merge and deduplicate cookies
-  // Use composite key of domain + name + path + partitionKey to identify unique cookies
   const allCookies = [...unpartitioned, ...partitioned];
   const seen = new Set<string>();
   const deduplicated = allCookies.filter((cookie) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partitionKey is not typed
-    const partitionKey = (cookie as any).partitionKey?.topLevelSite || '';
-    const key = `${cookie.domain}|${cookie.name}|${cookie.path}|${partitionKey}`;
+    let partition = '';
+    if (cookie && typeof cookie === 'object' && 'partitionKey' in cookie) {
+      const pKey = cookie.partitionKey;
+      if (pKey && typeof pKey === 'object' && 'topLevelSite' in pKey) {
+        partition = String(pKey.topLevelSite || '');
+      }
+    }
+    const key = `${cookie.domain}|${cookie.name}|${cookie.path}|${partition}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 
-  // Transform to match our strict interface if needed, but usually it matches
   return deduplicated as unknown as Cookie[];
 }
 
@@ -130,7 +307,6 @@ export async function restoreCookies(
   const details: CookieRestoreDetail[] = [];
 
   if (!isExtension) {
-    console.warn('Not extension environment, skipping restore');
     return {
       success: cookies.length,
       failed: 0,
@@ -150,8 +326,6 @@ export async function restoreCookies(
 
   for (let i = 0; i < total; i++) {
     const cookie = cookies[i];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Browser API types are loose
-    let setDetails: any = {};
 
     // 1. Skip expired cookies
     if (cookie.expirationDate && cookie.expirationDate < Date.now() / 1000) {
@@ -168,20 +342,10 @@ export async function restoreCookies(
       continue;
     }
 
-    const buildUrl = (secure: boolean, domain: string, path: string) => {
-      return (
-        'http' +
-        (secure ? 's' : '') +
-        '://' +
-        (domain.startsWith('.') ? domain.slice(1) : domain) +
-        path
-      );
-    };
-
     // Attempt 1: As-is (with cleanup)
-    const url = buildUrl(cookie.secure, cookie.domain, cookie.path);
+    const url = buildCookieUrl(cookie);
 
-    setDetails = {
+    const setDetails: Record<string, unknown> = {
       url: url,
       name: cookie.name,
       value: cookie.value,
@@ -208,7 +372,7 @@ export async function restoreCookies(
     }
 
     try {
-      await browser.cookies.set(setDetails);
+      await browser.cookies.set(setDetails as unknown as Parameters<typeof browser.cookies.set>[0]);
       success++;
       details.push({
         name: cookie.name,
@@ -217,13 +381,17 @@ export async function restoreCookies(
       });
     } catch (e) {
       // Retry Strategy: HSTS Upgrade
-      // If the domain restricts HTTP (e.g. .app TLD), setting an insecure cookie fails.
-      // We try to force it to HTTPS and Secure.
       try {
         if (!cookie.secure) {
           setDetails.secure = true;
-          setDetails.url = buildUrl(true, cookie.domain, cookie.path);
-          await browser.cookies.set(setDetails);
+          setDetails.url = buildCookieUrl({
+            secure: true,
+            domain: cookie.domain,
+            path: cookie.path,
+          });
+          await browser.cookies.set(
+            setDetails as unknown as Parameters<typeof browser.cookies.set>[0]
+          );
           success++;
           details.push({
             name: cookie.name,
@@ -232,7 +400,7 @@ export async function restoreCookies(
             reason: 'Upgraded to HTTPS',
           });
         } else {
-          throw e; // Already secure, rethrow
+          throw e;
         }
       } catch (retryError) {
         const errorMessage = retryError instanceof Error ? retryError.message : 'Unknown error';

@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
+import browser from 'webextension-polyfill';
 import { downloadBlob } from './downloadBlob';
+
+interface MockDownloads {
+  download?: Mock;
+}
+
+interface MockBrowser {
+  downloads?: MockDownloads;
+}
 
 vi.mock('webextension-polyfill', () => ({
   default: {
@@ -16,9 +26,8 @@ describe('downloadBlob', () => {
   });
 
   it('should use browser.downloads when available', async () => {
-    const { default: browser } = await import('webextension-polyfill');
     const downloadMock = vi.fn().mockResolvedValue(1);
-    (browser as any).downloads = { download: downloadMock };
+    (browser as unknown as MockBrowser).downloads = { download: downloadMock };
 
     const blob = new Blob(['test']);
     await downloadBlob(blob, 'file.txt');
@@ -33,17 +42,22 @@ describe('downloadBlob', () => {
   });
 
   it('should fallback to anchor click when browser.downloads is unavailable', async () => {
-    const { default: browser } = await import('webextension-polyfill');
-    (browser as any).downloads = undefined;
+    (browser as unknown as MockBrowser).downloads = undefined;
 
     const clickMock = vi.fn();
-    const originalCreateElement = document.createElement;
-    document.createElement = vi.fn((tagName: string) => {
+    const originalCreateElement = document.createElement.bind(document);
+    const mockAnchor = {
+      click: clickMock,
+      href: '',
+      download: '',
+    } as unknown as HTMLAnchorElement;
+
+    vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
       if (tagName === 'a') {
-        return { click: clickMock, href: '', download: '' } as any;
+        return mockAnchor;
       }
-      return originalCreateElement.call(document, tagName);
-    }) as any;
+      return originalCreateElement(tagName);
+    });
 
     const blob = new Blob(['test']);
     await downloadBlob(blob, 'file.txt');
@@ -52,13 +66,14 @@ describe('downloadBlob', () => {
     expect(clickMock).toHaveBeenCalled();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test');
 
-    document.createElement = originalCreateElement;
+    vi.restoreAllMocks();
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
   });
 
   it('should revoke object URL even if browser.downloads throws', async () => {
-    const { default: browser } = await import('webextension-polyfill');
     const downloadMock = vi.fn().mockRejectedValue(new Error('Download failed'));
-    (browser as any).downloads = { download: downloadMock };
+    (browser as unknown as MockBrowser).downloads = { download: downloadMock };
 
     const blob = new Blob(['test']);
     await expect(downloadBlob(blob, 'file.txt')).rejects.toThrow('Download failed');

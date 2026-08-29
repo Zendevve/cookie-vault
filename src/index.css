@@ -110,6 +110,57 @@
     transition-timing-function: ease-out;
   }
 
+  /* Tab panel entrance animation */
+  @keyframes tabFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-tab-fade {
+    animation: tabFadeIn 160ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  /* Icon pop animation for state confirmation */
+  @keyframes iconPop {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-icon-pop {
+    animation: iconPop 140ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  /* Smooth CSS Grid Accordion */
+  .accordion-grid {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition:
+      grid-template-rows 200ms cubic-bezier(0.23, 1, 0.32, 1),
+      opacity 150ms ease-out;
+    opacity: 0;
+  }
+
+  .accordion-grid-expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .accordion-content {
+    overflow: hidden;
+  }
+
   /* Minimum touch target (Apple HIG: 44x44pt) */
   .touch-target {
     min-width: 44px;

@@ -15,6 +15,20 @@ export interface DropboxFile {
   size: number;
 }
 
+interface DropboxListEntry {
+  '.tag': string;
+  id: string;
+  name: string;
+  client_modified: string;
+  size: number;
+}
+
+interface DropboxListResponse {
+  entries?: DropboxListEntry[];
+  has_more?: boolean;
+  cursor?: string;
+}
+
 function authHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
@@ -39,8 +53,10 @@ export async function listDropboxFiles(token: string): Promise<DropboxFile[]> {
     throw new Error(`Dropbox list failed: ${err}`);
   }
 
-  const data = await res.json();
-  return (data.entries || []).filter((e: any) => e['.tag'] === 'file' && e.name.endsWith('.cv'));
+  const data = (await res.json()) as DropboxListResponse;
+  return (data.entries || []).filter(
+    (e: DropboxListEntry) => e['.tag'] === 'file' && e.name.endsWith('.cv')
+  );
 }
 
 /**
@@ -54,7 +70,12 @@ export async function uploadToDropbox(token: string, filename: string, blob: Blo
     headers: {
       ...authHeaders(token),
       'Content-Type': 'application/octet-stream',
-      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: true }),
+      'Dropbox-API-Arg': JSON.stringify({
+        path,
+        mode: 'overwrite',
+        autorename: false,
+        mute: false,
+      }),
     },
     body: blob,
   });

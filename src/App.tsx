@@ -118,7 +118,11 @@ function App() {
             aria-labelledby="backup-tab"
             hidden={activeTab !== 'backup'}
           >
-            {activeTab === 'backup' && <BackupFlow />}
+            {activeTab === 'backup' && (
+              <div className="animate-tab-fade">
+                <BackupFlow />
+              </div>
+            )}
           </div>
 
           <div
@@ -127,7 +131,11 @@ function App() {
             aria-labelledby="restore-tab"
             hidden={activeTab !== 'restore'}
           >
-            {activeTab === 'restore' && <RestoreFlow />}
+            {activeTab === 'restore' && (
+              <div className="animate-tab-fade">
+                <RestoreFlow />
+              </div>
+            )}
           </div>
 
           <div
@@ -137,7 +145,7 @@ function App() {
             hidden={activeTab !== 'export'}
           >
             {activeTab === 'export' && (
-              <div className="space-y-4">
+              <div className="animate-tab-fade space-y-4">
                 <ExportTab status={exportStatus.status} onStatusChange={handleExportStatusChange} />
                 {exportStatus.message && (
                   <div
@@ -163,7 +171,11 @@ function App() {
             aria-labelledby="settings-tab"
             hidden={activeTab !== 'settings'}
           >
-            {activeTab === 'settings' && <SettingsTab />}
+            {activeTab === 'settings' && (
+              <div className="animate-tab-fade">
+                <SettingsTab />
+              </div>
+            )}
           </div>
         </div>
       </div>
